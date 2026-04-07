@@ -19,7 +19,7 @@ class App(ctk.CTk):
         self.camera_frames.grid(row=0, column=0, padx=10, pady=10, sticky="wens")
 
         # Probar los backends (segundo parametro)
-        self.cap = cv2.VideoCapture(0, cv2.CAP_IMAGES)
+        self.cap = cv2.VideoCapture(0, cv2.CAP_ANY)
         time.sleep(0.6)
 
         if not self.cap.isOpened():
@@ -33,7 +33,7 @@ class App(ctk.CTk):
         if ret:
             cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(cv2image)
-            self.camera_frames.configure(image=ctk.CTkImage(img))
+            self.camera_frames.configure(image=ctk.CTkImage(img,size=(200,200)))
 
         self.camera_frames.after(20, self.show_frames)
 
