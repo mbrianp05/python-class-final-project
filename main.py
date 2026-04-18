@@ -1,4 +1,8 @@
+import time
+
 import customtkinter as ctk
+import cv2
+from PIL import Image
 
 from sidebar import Sidebar
 
@@ -24,25 +28,22 @@ class App(ctk.CTk):
         self.camera_frames = ctk.CTkLabel(self, text="")
         self.camera_frames.grid(row=0, column=1, sticky="nswe")
 
-        # Probar los backends (segundo parametro) - DONE
-        # self.cap = cv2.VideoCapture(0, cv2.CAP_ANY)
-        # time.sleep(0.6)
+        self.cap = cv2.VideoCapture(0, cv2.CAP_ANY)
+        time.sleep(0.6)
 
-        # if not self.cap.isOpened():
-        #     print("ERROR - Not opened")
+        if not self.cap.isOpened():
+            print("ERROR - Not opened")
 
-        # self.show_frames()
+        self.show_frames()
 
     def show_frames(self):
-        # # Get the latest frame and convert into Image
-        # ret, frame = self.cap.read()
-        # if ret:
-        #     cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        #     img = Image.fromarray(cv2image)
-        #     self.camera_frames.configure(image=ctk.CTkImage(img, size=(500, 500)))
+        ret, frame = self.cap.read()
+        if ret:
+            cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(cv2image)
+            self.camera_frames.configure(image=ctk.CTkImage(img, size=(500, 500)))
 
-        # self.camera_frames.after(20, self.show_frames)
-        pass
+        self.camera_frames.after(20, self.show_frames)
 
     def on_closing(self):
         # self.cap.release()

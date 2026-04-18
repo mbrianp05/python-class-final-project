@@ -30,6 +30,7 @@ class Sidebar(CTkFrame):
             text="Lista de Gestos",
             font=self.header_font,
             fg_color="transparent",
+            text_color="white",
         )
         self.header_label.grid(row=0, column=0, sticky="we")
 
@@ -51,7 +52,10 @@ class Sidebar(CTkFrame):
             item = ctk.CTkLabel(
                 self.scrollable_frame,
                 height=50,
-                text="  Gesto " + str(i + 1),
+                text="  Gesto "
+                + str(
+                    i + 1
+                ),  # el espacio es para que el texto no se vea tan pegado al icono
                 image=generic_gesture_icon,  # type: ignore
                 fg_color="transparent",
                 corner_radius=50,
@@ -61,12 +65,12 @@ class Sidebar(CTkFrame):
             item.grid(row=i, column=0, padx=0, pady=0, sticky="ew")
 
     def create_add_button(self):
-        # Para crear nuevos gestos
+        add_icon = tksvg.SvgImage(file="./icons/add.svg", scaletoheight=35)
+
         plus = ctk.CTkButton(
             self,
             font=self.bold_font,
-            height=30,
-            text="+",
-            corner_radius=15,
+            text="",
+            image=add_icon,
         )
-        plus.grid(column=0, row=2, padx=5, sticky="we", pady=5)
+        plus.grid(column=0, row=2, padx=5, pady=10, sticky="we")
