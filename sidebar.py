@@ -21,18 +21,19 @@ class Sidebar(CTkFrame):
 
     def init_fonts(self):
         self.header_font = ctk.CTkFont(size=22, weight="bold")
-        self.bold_font = ctk.CTkFont(weight="bold", size=17)
+        self.bold_font = ctk.CTkFont(weight="bold", size=18)
 
     def create_header_label(self):
         self.header_label = ctk.CTkLabel(
             self,
-            height=60,
-            text="Lista de Gestos",
+            height=55,
+            text="Gestos actuales",
             font=self.header_font,
             fg_color="transparent",
             text_color="white",
+            anchor="w",
         )
-        self.header_label.grid(row=0, column=0, sticky="we")
+        self.header_label.grid(row=0, column=0, padx=(20, 0), sticky="we")
 
     def create_scrollbar_panel(self):
         self.scrollable_frame = ctk.CTkScrollableFrame(
@@ -51,18 +52,18 @@ class Sidebar(CTkFrame):
         for i in range(10):
             item = ctk.CTkLabel(
                 self.scrollable_frame,
-                height=50,
+                height=45,
                 text="  Gesto "
                 + str(
                     i + 1
                 ),  # el espacio es para que el texto no se vea tan pegado al icono
                 image=generic_gesture_icon,  # type: ignore
                 fg_color="transparent",
-                corner_radius=50,
                 compound="left",
                 font=self.bold_font,
+                anchor="w",
             )
-            item.grid(row=i, column=0, padx=0, pady=0, sticky="ew")
+            item.grid(row=i, column=0, padx=(20, 0), pady=0, sticky="ew")
 
     def create_add_button(self):
         add_icon = tksvg.SvgImage(file="./icons/add.svg", scaletoheight=35)
@@ -70,7 +71,11 @@ class Sidebar(CTkFrame):
         plus = ctk.CTkButton(
             self,
             font=self.bold_font,
-            text="",
+            text="Añadir gesto",
             image=add_icon,
+            width=40,
+            height=40,
+            corner_radius=20,
+            border_spacing=0,
         )
-        plus.grid(column=0, row=2, padx=5, pady=10, sticky="we")
+        plus.grid(column=0, row=2, padx=5, pady=13)
