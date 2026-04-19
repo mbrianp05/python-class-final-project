@@ -5,6 +5,7 @@ import tksvg
 from customtkinter import CTkFrame
 
 from gesture import Gesture
+from utils import shorten_gesture_name
 
 
 class Sidebar(CTkFrame):
@@ -49,14 +50,13 @@ class Sidebar(CTkFrame):
             file="./icons/generic-gesture.svg", scaletoheight=25
         )
 
-        for i in range(10):
+        for i, gesture in enumerate(self.gestures):
+            name = shorten_gesture_name(gesture.name)
+
             item = ctk.CTkLabel(
                 self.scrollable_frame,
                 height=45,
-                text="  Gesto "
-                + str(
-                    i + 1
-                ),  # el espacio es para que el texto no se vea tan pegado al icono
+                text=f"  {name}",  # el espacio es para que el texto no se vea tan pegado al icono
                 image=generic_gesture_icon,  # type: ignore
                 fg_color="transparent",
                 compound="left",

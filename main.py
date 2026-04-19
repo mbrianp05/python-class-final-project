@@ -1,13 +1,16 @@
 import customtkinter as ctk
 
+from services import fetch_gestures
 from sidebar import Sidebar
 
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
+
         self.geometry("800x600")
         self.title("Reconocimiento de gestos")
+
         self.configure_layout()
         self.init_scroll()
         self.init_camera()
@@ -17,7 +20,7 @@ class App(ctk.CTk):
         self.rowconfigure(0, weight=1)
 
     def init_scroll(self):
-        self.sidebar = Sidebar(self)
+        self.sidebar = Sidebar(self, fetch_gestures())
         self.sidebar.grid(column=0, row=0, sticky="ns")
 
     def init_camera(self):
