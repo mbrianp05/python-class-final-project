@@ -21,8 +21,8 @@ class Sidebar(CTkFrame):
         self.create_add_button()
 
     def init_fonts(self):
-        self.header_font = ctk.CTkFont(size=22, weight="bold")
-        self.bold_font = ctk.CTkFont(weight="bold", size=16)
+        self.header_font = ctk.CTkFont(family="Proxima Nova Rg", size=25)
+        self.bold_font = ctk.CTkFont(family="Proxima Nova Lt", size=16, weight="bold")
 
     def create_header_label(self):
         self.header_label = ctk.CTkLabel(
@@ -77,6 +77,7 @@ class Sidebar(CTkFrame):
             height=40,
             corner_radius=20,
             border_spacing=0,
+            cursor="hand2",
         )
         plus.grid(column=0, row=2, padx=5, pady=13)
 

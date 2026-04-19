@@ -3,6 +3,11 @@ import customtkinter as ctk
 from components import Camera, Sidebar
 from services import fetch_gestures
 
+ctk.FontManager.load_font("fonts/Proxima Nova Regular.ttf")
+ctk.FontManager.load_font("fonts/Proxima Nova Light.ttf")
+ctk.FontManager.load_font("fonts/Proxima Nova Semibold.ttf")
+ctk.FontManager.load_font("fonts/Proxima Nova Extrabold.ttf")
+
 
 class App(ctk.CTk):
     def __init__(self):
