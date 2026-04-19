@@ -16,17 +16,20 @@ class Sidebar(CTkFrame):
         self.gestures = gestures
 
         self.init_fonts()
-        self.create_header_label()
+        self.create_header()
         self.create_scrollbar_panel()
-        self.create_add_button()
 
     def init_fonts(self):
         self.header_font = ctk.CTkFont(family="Proxima Nova Rg", size=25)
-        self.bold_font = ctk.CTkFont(family="Proxima Nova Lt", size=16, weight="bold")
+        self.bold_font = ctk.CTkFont(family="Proxima Nova Lt", size=17, weight="bold")
 
-    def create_header_label(self):
+    def create_header(self):
+        self.header = ctk.CTkFrame(self, fg_color="transparent")
+        self.header.columnconfigure(0, weight=1)
+        self.header.grid(row=0, column=0, padx=20, sticky="we")
+
         self.header_label = ctk.CTkLabel(
-            self,
+            self.header,
             height=55,
             text="Tus gestos",
             font=self.header_font,
@@ -34,7 +37,31 @@ class Sidebar(CTkFrame):
             text_color="white",
             anchor="w",
         )
-        self.header_label.grid(row=0, column=0, padx=(20, 0), sticky="we")
+        self.header_label.grid(row=0, column=0, sticky="we")
+
+        self.gear_icon = tksvg.SvgImage(file="./icons/gear.svg", scaletoheight=26)
+        self.gear_icon_darker = tksvg.SvgImage(
+            file="./icons/gear_darker.svg", scaletoheight=26
+        )
+
+        self.configure_gestures_label = ctk.CTkLabel(
+            self.header,
+            text="",
+            fg_color="transparent",
+            text_color="white",
+            cursor="hand2",
+            image=self.gear_icon,  # type: ignore
+        )
+        self.configure_gestures_label.grid(row=0, column=1, pady=(5, 0))
+
+        self.configure_gestures_label.bind("<Enter>", self.on_enter)
+        self.configure_gestures_label.bind("<Leave>", self.on_leave)
+
+    def on_leave(self, _):
+        self.configure_gestures_label.configure(image=self.gear_icon)
+
+    def on_enter(self, _):
+        self.configure_gestures_label.configure(image=self.gear_icon_darker)
 
     def create_scrollbar_panel(self):
         self.scrollable_frame = ctk.CTkScrollableFrame(
@@ -64,22 +91,6 @@ class Sidebar(CTkFrame):
                 anchor="w",
             )
             item.grid(row=i, column=0, padx=(10, 0), pady=0, sticky="ew")
-
-    def create_add_button(self):
-        add_icon = tksvg.SvgImage(file="./icons/add.svg", scaletoheight=35)
-
-        plus = ctk.CTkButton(
-            self,
-            font=self.bold_font,
-            text="Añadir gesto",
-            image=add_icon,
-            width=40,
-            height=40,
-            corner_radius=20,
-            border_spacing=0,
-            cursor="hand2",
-        )
-        plus.grid(column=0, row=2, padx=5, pady=13)
 
 
 # DESCOMENTAR LOS TROZOS DE CODIGO PARA QUE LA CAMARAA FUNCIONE
