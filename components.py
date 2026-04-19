@@ -7,6 +7,9 @@ from customtkinter import CTkFrame
 from gesture import Gesture
 from utils import shorten_gesture_name
 
+import cv2
+import time
+from PIL import Image
 
 class Sidebar(CTkFrame):
     def __init__(self, master, gestures: List[Gesture] = []):
@@ -93,7 +96,6 @@ class Sidebar(CTkFrame):
             item.grid(row=i, column=0, padx=(10, 0), pady=0, sticky="ew")
 
 
-# DESCOMENTAR LOS TROZOS DE CODIGO PARA QUE LA CAMARAA FUNCIONE
 class Camera(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
@@ -109,26 +111,26 @@ class Camera(ctk.CTkFrame):
         self.camera_frames = ctk.CTkLabel(self, text="")
         self.camera_frames.grid(row=0, column=0, sticky="nswe")
 
-        # self.cap = cv2.VideoCapture(0, cv2.CAP_ANY)
-        # time.sleep(0.6)
+        self.cap = cv2.VideoCapture(0, cv2.CAP_ANY)
+        time.sleep(0.6)
 
-        # if not self.cap.isOpened():
-        #     print("ERROR - Not opened")
+        if not self.cap.isOpened():
+            print("ERROR - Not opened")
 
-        # self.show_frames()
+        self.show_frames()
 
     def show_frames(self):
-        # ret, frame = self.cap.read()
-        # if ret:
-        #     cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        #     img = Image.fromarray(cv2image)
-        #     self.camera_frames.configure(image=ctk.CTkImage(img, size=(500, 500)))
+        ret, frame = self.cap.read()
+        if ret:
+            cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(cv2image)
+            self.camera_frames.configure(image=ctk.CTkImage(img, size=(600, 600)))
 
-        # self.camera_frames.after(20, self.show_frames)
+        self.camera_frames.after(20, self.show_frames)
 
         pass
 
     def on_closing(self):
-        # self.cap.release()
-        # self.destroy()
+        self.cap.release()
+        self.destroy()
         pass
