@@ -25,6 +25,8 @@ class App(ctk.CTk):
         self.display_sidebar()
         self.display_camera()
 
+        self._state_before_windows_set_titlebar_color = 'zoomed' # Para maximizar la ventana
+
     def display_sidebar(self):
         self.sidebar = Sidebar(self, fetch_gestures())
         self.sidebar.grid(column=0, row=0, sticky="ns")
@@ -46,5 +48,5 @@ if __name__ == "__main__":
     app.geometry(f"{app.winfo_screenwidth()}x{app.winfo_screenheight()}+0+0")
     # app.after(25, lambda: app.attributes("-fullscreen", True))
 
-    app.protocol("WM_DELETE_WINDOW", app.on_closing)
+    # app.protocol("WM_DELETE_WINDOW", app.on_closing)
     app.mainloop()
