@@ -2,6 +2,7 @@ import customtkinter as ctk
 
 from components import Camera, Sidebar
 from services import fetch_gestures
+from utils import verify_os
 
 ctk.FontManager.load_font("fonts/Proxima Nova Regular.ttf")
 ctk.FontManager.load_font("fonts/Proxima Nova Light.ttf")
@@ -37,6 +38,8 @@ class App(ctk.CTk):
 
 
 if __name__ == "__main__":
+    verify_os()
+
     app = App()
 
     # Hay que mejorar el tema de la pantalla completa

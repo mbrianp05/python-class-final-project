@@ -1,4 +1,13 @@
 import os
+import sys
+
+ALLOWED_OS_PREFIXES = ("win",)
+
+
+def verify_os() -> None:
+    if not sys.platform.startswith(ALLOWED_OS_PREFIXES):
+        exit("Operating system not supported")
+
 
 name_max_len = 14
 
