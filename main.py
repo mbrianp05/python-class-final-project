@@ -17,6 +17,12 @@ class App(ctk.CTk):
         self.title("Reconocimiento de gestos")
 
         self.configure_layout()
+        self.maximize()
+
+    def maximize(self):
+        self._state_before_windows_set_titlebar_color = (
+            "zoomed"  # Para maximizar la ventana
+        )
 
     def configure_layout(self):
         self.columnconfigure(1, weight=1)
@@ -24,8 +30,6 @@ class App(ctk.CTk):
 
         self.display_sidebar()
         self.display_camera()
-
-        self._state_before_windows_set_titlebar_color = 'zoomed' # Para maximizar la ventana
 
     def display_sidebar(self):
         self.sidebar = Sidebar(self, fetch_gestures())
