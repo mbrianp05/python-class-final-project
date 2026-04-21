@@ -7,3 +7,4 @@ numpy==2.4.4
 opencv-contrib-python==4.13.0.92
 opencv-python==4.13.0.92
 pillow==12.2.0
+pycaw==20251023
