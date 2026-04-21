@@ -1,6 +1,5 @@
 import os
 import sys
-from typing import List, Literal
 
 ALLOWED_OS_PREFIXES = ("win",)
 
@@ -32,15 +31,3 @@ WIFI_INTERFACE_NAME = "Wi-Fi"
 # lo que tiene que ver con el wifi esta desabilitado
 def has_wifi_adapter() -> bool:
     return True
-
-
-# Hay que implementar bien esto
-def wifi_command_generator(action: Literal["enable", "disable"]) -> List[str]:
-    action_lowered = action.lower()
-
-    if action_lowered not in ["enable", "desable"]:
-        raise Exception("Invalid action for wifi command")
-
-    command = []
-
-    return command

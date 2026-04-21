@@ -10,6 +10,8 @@
 
 import subprocess
 
+from pycaw.pycaw import AudioUtilities
+
 
 # abrir el explorador en esa carpeta
 def open_explorer_at(path: str) -> None:
@@ -26,12 +28,16 @@ def open_file_with_default_app(filepath: str) -> None:
     subprocess.run(["start", "", filepath], shell=True, check=True)
 
 
-def volume_up(rate: int) -> None:
-    pass
+def set_volume(rate: float) -> None:
+    device = AudioUtilities.GetSpeakers()
+    volume = device.EndpointVolume  # type: ignore
+    max = 0
+    min = -21
+    new = min + (max - min) * rate
 
+    print(int(new), max)
 
-def volume_down(rate: int) -> None:
-    pass
+    volume.SetMasterVolumeLevel(new, None)
 
 
 def wifi_on() -> None:

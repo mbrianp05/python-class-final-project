@@ -1,15 +1,15 @@
+import time
 from typing import List
 
 import customtkinter as ctk
+import cv2
 import tksvg
 from customtkinter import CTkFrame
+from PIL import Image
 
 from gesture import Gesture
 from utils import shorten_gesture_name
 
-import cv2
-import time
-from PIL import Image
 
 class Sidebar(CTkFrame):
     def __init__(self, master, gestures: List[Gesture] = []):
