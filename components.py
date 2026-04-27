@@ -107,12 +107,12 @@ class Camera(ctk.CTkFrame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
-        self.init_camera()
-
-    def init_camera(self):
         self.camera_frames = ctk.CTkLabel(self, text="")
         self.camera_frames.grid(row=0, column=0, sticky="nswe")
 
+        self.init_camera()
+
+    def init_camera(self):
         self.cap = cv2.VideoCapture(0, cv2.CAP_ANY)
         time.sleep(0.6)
 
