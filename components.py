@@ -8,9 +8,8 @@ from customtkinter import CTkFrame
 from PIL import Image
 
 from gesture import Gesture
+from uiclasses import MouseEventsImagesPack
 from utils import shorten_gesture_name
-
-from ._types import MouseEventsImagesPack
 
 
 class Sidebar(CTkFrame):
@@ -36,7 +35,7 @@ class Sidebar(CTkFrame):
         self.header_label = ctk.CTkLabel(
             self.header,
             height=55,
-            text="Tus gestos",
+            text="Gestos",
             font=self.header_font,
             fg_color="transparent",
             text_color="white",
@@ -44,29 +43,13 @@ class Sidebar(CTkFrame):
         )
         self.header_label.grid(row=0, column=0, sticky="we")
 
-        self.gear_icon = tksvg.SvgImage(file="./icons/gear.svg", scaletoheight=26)
-        self.gear_icon_darker = tksvg.SvgImage(
-            file="./icons/gear_darker.svg", scaletoheight=26
+        images_pack = MouseEventsImagesPack(
+            noEvent=tksvg.SvgImage(file="./icons/gear.svg", scaletoheight=26),
+            mouseEnter=tksvg.SvgImage(file="./icons/gear_darker.svg", scaletoheight=26),
         )
 
-        self.configure_gestures_label = ctk.CTkLabel(
-            self.header,
-            text="",
-            fg_color="transparent",
-            text_color="white",
-            cursor="hand2",
-            image=self.gear_icon,  # type: ignore
-        )
+        self.configure_gestures_label = IconButton(self.header, images_pack=images_pack)
         self.configure_gestures_label.grid(row=0, column=1, pady=(5, 0))
-
-        self.configure_gestures_label.bind("<Enter>", self.on_enter)
-        self.configure_gestures_label.bind("<Leave>", self.on_leave)
-
-    def on_leave(self, _):
-        self.configure_gestures_label.configure(image=self.gear_icon)
-
-    def on_enter(self, _):
-        self.configure_gestures_label.configure(image=self.gear_icon_darker)
 
     def create_scrollbar_panel(self):
         self.scrollable_frame = ctk.CTkScrollableFrame(
@@ -135,11 +118,13 @@ class Camera(ctk.CTkFrame):
         self.destroy()
 
 
-# El botón normal de Customtkinter es más limitado
-# en cuanto a la personalización por eso hice este
-# este componente botones sin color de fondo y con
-# iconos que cambian segun los eventos del mouse
-class CustomButton(ctk.CTkButton):
+# El botón normal de Customtkinter tiene un aspecto
+# que en ciertos casos no queremos como el boton de configurar gestos
+# que no tiene color de fondo sino un icono que cambia segun los eventos
+# del raton
+# Como esta configuracion se usara mas veces entonces hice un componente para
+# reutilizarlo
+class CustomButton(ctk.CTkLabel):
     def __init__(
         self,
         master,
@@ -151,20 +136,37 @@ class CustomButton(ctk.CTkButton):
             master,
             text=text,
             fg_color="transparent",
-            hover_color="transparent",
             text_color="white",
             cursor="hand2",
-            image=images_pack.no_event,
-            command=command,
         )
 
+        self.command = command
         self.images_pack = images_pack
 
         self.bind("<Enter>", self.on_enter)
         self.bind("<Leave>", self.on_leave)
+        self.bind("<Down>", self.on_click)
+
+        self.configure(image=self.images_pack.noEvent)
+
+    # Hay que implementar el click cuando se presione el boton
+    # usando la propiedad command
+    def on_click(self, _):
+        pass
 
     def on_leave(self, _):
-        self.configure(image=self.images_pack.mouseLeave)
+        self.configure(image=self.images_pack.noEvent)
 
     def on_enter(self, _):
         self.configure(image=self.images_pack.mouseEnter)
+
+
+# Boton con la imagen sin texto
+class IconButton(CustomButton):
+    def __init__(
+        self,
+        master,
+        images_pack: MouseEventsImagesPack,
+        command: Callable[[], Any] | None = None,
+    ):
+        super().__init__(master, "", images_pack, command)
