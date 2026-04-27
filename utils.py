@@ -9,11 +9,11 @@ def verify_os() -> None:
         exit("Operating system not supported")
 
 
-name_max_len = 14
+name_max_len = 17
 
 
 def shorten_gesture_name(name: str) -> str:
-    return name[:name_max_len] + "..." if len(name) > name_max_len else name
+    return name[: name_max_len - 3] + "..." if len(name) > name_max_len else name
 
 
 # Verificar que el path exista
