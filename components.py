@@ -1,5 +1,5 @@
 import time
-from typing import List
+from typing import Callable, List
 
 import customtkinter as ctk
 import cv2
@@ -9,6 +9,8 @@ from PIL import Image
 
 from gesture import Gesture
 from utils import shorten_gesture_name
+
+from .types import MouseEventsImagesPack
 
 
 class Sidebar(CTkFrame):
@@ -134,3 +136,37 @@ class Camera(ctk.CTkFrame):
         self.cap.release()
         self.destroy()
         pass
+
+
+# El botón normal de Customtkinter es más limitado
+# en cuanto a la personalización por eso hice este
+# este componente botones sin color de fondo y con
+# iconos que cambian segun los eventos del mouse
+class CustomButton(ctk.CTkLabel):
+    def __init__(
+        self,
+        master,
+        text,
+        images_pack: MouseEventsImagesPack,
+        command: Callable[[], None] | None = None,
+    ):
+        super().__init__(
+            master,
+            text=text,
+            fg_color="transparent",
+            text_color="white",
+            cursor="hand2",
+            image=images_pack.no_event,
+        )
+
+        self.command = command
+        self.images_pack = images_pack
+
+        self.bind("<Enter>", self.on_enter)
+        self.bind("<Leave>", self.on_leave)
+
+    def on_leave(self, _):
+        self.configure(image=self.images_pack.mouseLeave)
+
+    def on_enter(self, _):
+        self.configure(image=self.images_pack.mouseEnter)
