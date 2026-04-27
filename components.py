@@ -10,7 +10,7 @@ from PIL import Image
 from gesture import Gesture
 from utils import shorten_gesture_name
 
-from .types import MouseEventsImagesPack
+from ._types import MouseEventsImagesPack
 
 
 class Sidebar(CTkFrame):
@@ -110,7 +110,7 @@ class Camera(ctk.CTkFrame):
         self.camera_frames = ctk.CTkLabel(self, text="")
         self.camera_frames.grid(row=0, column=0, sticky="nswe")
 
-        self.init_camera()
+        # self.init_camera()
 
     def init_camera(self):
         self.cap = cv2.VideoCapture(0, cv2.CAP_ANY)
@@ -130,12 +130,9 @@ class Camera(ctk.CTkFrame):
 
         self.camera_frames.after(20, self.show_frames)
 
-        pass
-
     def on_closing(self):
         self.cap.release()
         self.destroy()
-        pass
 
 
 # El botón normal de Customtkinter es más limitado
