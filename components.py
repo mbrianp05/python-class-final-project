@@ -1,5 +1,5 @@
 import time
-from typing import Callable, List
+from typing import Any, Callable, List
 
 import customtkinter as ctk
 import cv2
@@ -139,24 +139,25 @@ class Camera(ctk.CTkFrame):
 # en cuanto a la personalización por eso hice este
 # este componente botones sin color de fondo y con
 # iconos que cambian segun los eventos del mouse
-class CustomButton(ctk.CTkLabel):
+class CustomButton(ctk.CTkButton):
     def __init__(
         self,
         master,
         text,
         images_pack: MouseEventsImagesPack,
-        command: Callable[[], None] | None = None,
+        command: Callable[[], Any] | None = None,
     ):
         super().__init__(
             master,
             text=text,
             fg_color="transparent",
+            hover_color="transparent",
             text_color="white",
             cursor="hand2",
             image=images_pack.no_event,
+            command=command,
         )
 
-        self.command = command
         self.images_pack = images_pack
 
         self.bind("<Enter>", self.on_enter)
