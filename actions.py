@@ -33,16 +33,21 @@ def open_file_with_default_app(filepath: str) -> None:
 
 
 def set_volume(level: int|float) -> None:
-    if(isinstance(level, int)):
-        level = max(0, min(level, 100))/100
-    elif(isinstance(level, float)):
-        level = max(0.0, min(level, 1.0))
-    else:
-        raise TypeError("Volume can be set to int (0 - 100) or float (0.0 - 1.0)")
+    try:
+        if(isinstance(level, int)):
+            level = max(0, min(level, 100))/100
+        elif(isinstance(level, float)):
+            level = max(0.0, min(level, 1.0))
+        else:
+            raise TypeError("Volume can be set to int (0 - 100) or float (0.0 - 1.0)")
 
-    device = AudioUtilities.GetSpeakers()           # Buscar el dispositivo
-    volume = device.EndpointVolume                  # Obtener la interfaz 
-    volume.SetMasterVolumeLevelScalar(level, None)  # Ajustar el volumen
+        device = AudioUtilities.GetSpeakers()           # Buscar el dispositivo
+        volume = device.EndpointVolume                  # Obtener la interfaz 
+        volume.SetMasterVolumeLevelScalar(level, None)  # Ajustar el volumen
+
+    except Exception as e:
+        print(f"ERROR - {e}")       # Captura provisional
+
 
 
 def set_wifi(state: bool) -> None:
