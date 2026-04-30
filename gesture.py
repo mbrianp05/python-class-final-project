@@ -18,6 +18,7 @@ class Gesture[T]:
 # relevante que vamos a utilizar para los gestos
 # como el numero de manos que aparecen,
 # la cantidad de dedos levantados, etc.
+@dataclass(frozen=True)
 class GestureData:
     hands: Literal[0, 1, 2]
     visibleFingers: Tuple[Dict[Finger, bool], Dict[Finger, bool]]
