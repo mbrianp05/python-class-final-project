@@ -11,3 +11,10 @@ class MouseEventsImagesPack:
     noEvent: tksvg.SvgImage
     mouseEnter: tksvg.SvgImage | None = None
     mouseClick: tksvg.SvgImage | None = None
+
+
+@dataclass
+class HiglightingTransition:
+    fg_color: str
+    text_color: str
+    duration: int

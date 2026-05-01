@@ -41,7 +41,7 @@ class Sidebar(CTkFrame):
             text_color="white",
             anchor="w",
         )
-        self.header_label.grid(row=0, column=0, sticky="we")
+        self.header_label.grid(row=0, column=0, sticky="we", padx=(5, 0))
 
         images_pack = MouseEventsImagesPack(
             noEvent=tksvg.SvgImage(file="./icons/gear.svg", scaletoheight=26),
@@ -57,7 +57,7 @@ class Sidebar(CTkFrame):
             orientation="vertical",
             fg_color="transparent",
         )
-        self.scrollable_frame.items = {}    # Lista de elementos
+        self.scrollable_frame.items = {}  # type: ignore # Lista de elementos
         self.scrollable_frame.grid(row=1, column=0, padx=0, pady=0, sticky="ns")
         self.display_gestures_list()
 
@@ -69,6 +69,7 @@ class Sidebar(CTkFrame):
         for i, gesture in enumerate(self.gestures):
             name = shorten_gesture_name(gesture.name)
 
+            # CAMBIAR AQUI EL LABEL POR EL COMPONENTE IMPLEMENTADO DE HIGHLIGHTING
             item = ctk.CTkLabel(
                 self.scrollable_frame,
                 height=45,
@@ -78,39 +79,44 @@ class Sidebar(CTkFrame):
                 compound="left",
                 font=self.bold_font,
                 anchor="w",
+                corner_radius=50,
             )
 
-            # print(f"{item.cget("text_color")} {item.cget("fg_color")}")
-            self.scrollable_frame.items[i] = item   # Guardar referencias a cada elemento
+            self.scrollable_frame.items[i] = item  # type: ignore # Guardar referencias a cada elemento
+            item.grid(row=i, column=0, padx=(0, 0), pady=0, sticky="ew")
 
-            item.grid(row=i, column=0, padx=(10, 0), pady=0, sticky="ew")
-        
+    # . LEER .
+    # HAY QUE SACAR ESTO A UN COMPONENTE A PARTE QUE HEREDE DE ctk.CTkLabel
+    # QUE SE LLAME HighlightableLabel O ALGO ASI
+    # PARA USARLO EN LOS ITEMS DE LA LISTA DE GESTOS
+
+    # ADEMAS TE DEJE UNA CLASE uiclasses.HiglightingTransition PARA CONFIGURAR EL HIGHLIGHTING
+    # QUE SE PASARIA DE PARAMETRO AL COMPONENTE
+
+    # POR ULTIMO INTENTA QUE EL HIGHLIGHT SEA UNA ESPECIA DE PARAPEDEO
+    # COMO SI FUERA UN LATIDO DE CORAZON QUE TENGA ESE EFECTO DE COMO QUE "SE ACTIVO ALGO"
+    # MAS QUE DE EFECTO DE QUE PASO EL MOUSE POR ENCIMA
     def highlight_gesture(self, index: int = 0, duration: int = 500):
-        try:
-            if index < len(self.scrollable_frame.items):        # Buscar en la lista
-                item = self.scrollable_frame.items[index]
-                if isinstance(item, ctk.CTkLabel):              # Chequeo provisional
-                    if getattr(item, "highlight", None):        # Evitar repeticion
-                        item.after_cancel(item.highlight)
+        if index < len(self.scrollable_frame.items):  # type: ignore
+            item = self.scrollable_frame.items[index]  # type: ignore
+            if isinstance(item, ctk.CTkLabel):
+                if getattr(item, "highlight", None):
+                    item.after_cancel(item.highlight)  # type: ignore
 
-                    # Pasar colores de resaltado como parametros (?)
-                    item.configure(
-                        text_color="black",
-                        fg_color="yellow")
+                # Pasar colores de resaltado como parametros (?)
+                item.configure(fg_color="#0095A3")
 
-                    # Pasar colores originales/nuevos/finales como parametros (?)
-                    item.highlight = item.after(
-                        duration,
-                        lambda: item.configure(
-                            text_color="#DCE4EE",
-                            fg_color="transparent")
-                    )
+                # Pasar colores originales/nuevos/finales como parametros (?)
+                item.highlight = item.after(  # type: ignore
+                    duration,
+                    lambda: item.configure(
+                        text_color="#DCE4EE", fg_color="transparent"
+                    ),
+                )
 
-            else:
-                raise IndexError(f"Index [{index}] was out of bounds.")
+        else:
+            raise IndexError(f"Index [{index}] was out of bounds.")
 
-        except Exception as e:
-            print(f"ERROR - {e}")       # Captura provisional
 
 class Camera(ctk.CTkFrame):
     def __init__(self, master):
