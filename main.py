@@ -19,6 +19,11 @@ class App(ctk.CTk):
         self.configure_layout()
         self.maximize_window()
 
+    def highlight_gesture(self, event):
+        if(event.char.isdigit()):
+            self.sidebar.highlight_gesture(int(event.char))
+        print(f"Pressed < {event.char} >")
+
     def maximize_window(self):
         self._state_before_windows_set_titlebar_color = (
             "zoomed"  # Para maximizar la ventana
@@ -47,6 +52,7 @@ if __name__ == "__main__":
     verify_os()
 
     app = App()
+    app.bind("<Key>", app.highlight_gesture)
 
     # Hay que mejorar el tema de la pantalla completa
     app.geometry(f"{app.winfo_screenwidth()}x{app.winfo_screenheight()}+0+0")

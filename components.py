@@ -57,6 +57,7 @@ class Sidebar(CTkFrame):
             orientation="vertical",
             fg_color="transparent",
         )
+        self.scrollable_frame.items = {}    # Lista de elementos
         self.scrollable_frame.grid(row=1, column=0, padx=0, pady=0, sticky="ns")
         self.display_gestures_list()
 
@@ -78,8 +79,38 @@ class Sidebar(CTkFrame):
                 font=self.bold_font,
                 anchor="w",
             )
-            item.grid(row=i, column=0, padx=(10, 0), pady=0, sticky="ew")
 
+            # print(f"{item.cget("text_color")} {item.cget("fg_color")}")
+            self.scrollable_frame.items[i] = item   # Guardar referencias a cada elemento
+
+            item.grid(row=i, column=0, padx=(10, 0), pady=0, sticky="ew")
+        
+    def highlight_gesture(self, index: int = 0, duration: int = 500):
+        try:
+            if index < len(self.scrollable_frame.items):        # Buscar en la lista
+                item = self.scrollable_frame.items[index]
+                if isinstance(item, ctk.CTkLabel):              # Chequeo provisional
+                    if getattr(item, "highlight", None):        # Evitar repeticion
+                        item.after_cancel(item.highlight)
+
+                    # Pasar colores de resaltado como parametros (?)
+                    item.configure(
+                        text_color="black",
+                        fg_color="yellow")
+
+                    # Pasar colores originales/nuevos/finales como parametros (?)
+                    item.highlight = item.after(
+                        duration,
+                        lambda: item.configure(
+                            text_color="#DCE4EE",
+                            fg_color="transparent")
+                    )
+
+            else:
+                raise IndexError(f"Index [{index}] was out of bounds.")
+
+        except Exception as e:
+            print(f"ERROR - {e}")       # Captura provisional
 
 class Camera(ctk.CTkFrame):
     def __init__(self, master):
