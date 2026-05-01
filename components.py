@@ -79,7 +79,7 @@ class Sidebar(CTkFrame):
                 compound="left",
                 font=self.bold_font,
                 anchor="w",
-                corner_radius=50,
+                corner_radius=30,
             )
 
             self.scrollable_frame.items[i] = item  # type: ignore # Guardar referencias a cada elemento
@@ -104,7 +104,7 @@ class Sidebar(CTkFrame):
                     item.after_cancel(item.highlight)  # type: ignore
 
                 # Pasar colores de resaltado como parametros (?)
-                item.configure(fg_color="#0095A3")
+                item.configure(fg_color="#3A8CFF", text_color="#fff")
 
                 # Pasar colores originales/nuevos/finales como parametros (?)
                 item.highlight = item.after(  # type: ignore
