@@ -7,6 +7,7 @@ import tksvg
 from customtkinter import CTkFrame
 from PIL import Image
 
+import loader
 from gesture import Gesture
 from uiclasses import MouseEventsImagesPack
 from utils import shorten_gesture_name
@@ -24,8 +25,10 @@ class Sidebar(CTkFrame):
         self.create_scrollbar_panel()
 
     def init_fonts(self):
-        self.header_font = ctk.CTkFont(family="Proxima Nova Rg", size=25)
-        self.bold_font = ctk.CTkFont(family="Proxima Nova Lt", size=17, weight="bold")
+        fonts = loader.get_fonts()
+
+        self.header_font = fonts["title"]
+        self.bold_font = fonts["bold"]
 
     def create_header(self):
         self.header = ctk.CTkFrame(self, fg_color="transparent")
@@ -43,9 +46,11 @@ class Sidebar(CTkFrame):
         )
         self.header_label.grid(row=0, column=0, sticky="we", padx=(5, 0))
 
+        icons = loader.get_icons()
+
         images_pack = MouseEventsImagesPack(
-            noEvent=tksvg.SvgImage(file="./icons/gear.svg", scaletoheight=26),
-            mouseEnter=tksvg.SvgImage(file="./icons/gear_darker.svg", scaletoheight=26),
+            noEvent=icons["gear"],
+            mouseEnter=icons["gear_darker"],
         )
 
         self.configure_gestures_label = IconButton(self.header, images_pack=images_pack)
