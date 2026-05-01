@@ -1,13 +1,11 @@
 import customtkinter as ctk
 
+import loader
 from components import Camera, Sidebar
 from services import fetch_gestures
 from utils import verify_os
 
-ctk.FontManager.load_font("fonts/Proxima Nova Regular.ttf")
-ctk.FontManager.load_font("fonts/Proxima Nova Light.ttf")
-ctk.FontManager.load_font("fonts/Proxima Nova Semibold.ttf")
-ctk.FontManager.load_font("fonts/Proxima Nova Extrabold.ttf")
+loader.load_fonts_files()
 
 
 class App(ctk.CTk):
