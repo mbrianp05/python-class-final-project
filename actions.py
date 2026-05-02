@@ -9,15 +9,11 @@
 # por el sistema de archivos hasta que llegue a la carpeta deseada
 
 import subprocess
+import asyncio
 
 from PIL import ImageGrab
 from pycaw.pycaw import AudioUtilities
-
-# import asyncio
-# from winrt.windows.devices.radios import Radio, RadioKind, RadioState
-
-
-# COMENTE LO DEL WIFI PORQUE NO PUSISTE LA DEPENDENCIA QUE HACIA FALTA INSTALAR
+from winrt.windows.devices.radios import Radio, RadioKind, RadioState
 
 
 # abrir el explorador en esa carpeta
@@ -43,35 +39,19 @@ def set_volume(level: float) -> None:
     volume.SetMasterVolumeLevelScalar(level, None)
 
 
-# def set_wifi(state: bool) -> None:
-#     state = RadioState.ON if state else RadioState.OFF
+def set_wifi(state: bool) -> None:
+    state = RadioState.ON if state else RadioState.OFF
+    
+    # Actualizar estado del primer dispositivo Wi-Fi encontrado
+    async def async_set_wifi() -> None:
+        for i in await Radio.get_radios_async():
+            if i.kind == RadioKind.WI_FI and i.state != state:
+                _ = await i.set_state_async(state)  # type: ignore
+                break
 
-#     async def async_set_wifi() -> None:
-#         try:
-#             radios = await Radio.get_radios_async()  # Buscar todos los dispositivos
-
-#             wifi_radio = None
-
-#             for i in radios:  # Encontrar el primer dispositivo Wi-Fi
-#                 if i.kind == RadioKind.WI_FI:
-#                     wifi_radio = i
-#                     break
-
-#             if wifi_radio is None:
-#                 print("No Wi-Fi was found")
-
-#             if wifi_radio.state != state:  # type: ignore # Actualizar el estado
-#                 _ = await wifi_radio.set_state_async(state)  # type: ignore
-
-#         except Exception as e:
-#             print(f"ERROR - {e}")  # Captura provisional
-
-#     asyncio.run(async_set_wifi())
+    asyncio.run(async_set_wifi())
 
 
-# QUITE LOS ERRORES PORQUE NO TENIAN MUCHO SENTIDO
-# RECUERDA QUE EN ESTAS FUNCIONES ASUMIMOS QUE LA DATA
-# ES CORRECTA
 def take_screenshot(path_plus_name: str) -> None:
     screenshot = ImageGrab.grab()
     screenshot.save(path_plus_name)

@@ -8,3 +8,6 @@ opencv-contrib-python==4.13.0.92
 opencv-python==4.13.0.92
 pillow==12.2.0
 pycaw==20251023
+winrt-Windows.Devices.Radios==3.2.1
+winrt-Windows.Foundation==3.2.1
+winrt-Windows.Foundation.Collections==3.2.1
