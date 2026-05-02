@@ -8,6 +8,12 @@ from utils import verify_os
 loader.load_fonts_files()
 
 
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message=".*Image can not be scaled on HighDPI displays*."
+)
+
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
