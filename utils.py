@@ -22,12 +22,18 @@ def is_valid_path(path: str) -> bool:
     return os.path.exists(path) and os.path.isdir(path)
 
 
-WIFI_INTERFACE_NAME = "Wi-Fi"
-
-
-# Pendiente de implementacion
-# Util para mostrarle al usuario
-# que la opcion de ejecutar el gesto para
-# lo que tiene que ver con el wifi esta desabilitado
-def has_wifi_adapter() -> bool:
-    return True
+# LA PALETA DE COLORES DE LA APP
+# CAMBIAR AL GUSTO
+def get_color_palette():
+    return {
+        "primary": "#2563EB",
+        "primary_hover": "#3B82F6",
+        "primary_muted": "#1E3A8A",
+        # Text
+        "text_primary": "#F1F5F9",
+        "text_secondary": "#94A3B8",
+        "text_accent": "#FFFFFF",
+        # Border & accent
+        "border": "#334155",
+        "accent": "#0EA5E9",
+    }
