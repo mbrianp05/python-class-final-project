@@ -8,8 +8,8 @@
 # escribiendolo manualmente, copiandolo o con un botón para navegar de la UI
 # por el sistema de archivos hasta que llegue a la carpeta deseada
 
-import subprocess
 import asyncio
+import subprocess
 
 from PIL import ImageGrab
 from pycaw.pycaw import AudioUtilities
@@ -39,9 +39,9 @@ def set_volume(level: float) -> None:
     volume.SetMasterVolumeLevelScalar(level, None)
 
 
-def set_wifi(state: bool) -> None:
-    state = RadioState.ON if state else RadioState.OFF
-    
+def set_wifi(enable: bool) -> None:
+    state = RadioState.ON if enable else RadioState.OFF
+
     # Actualizar estado del primer dispositivo Wi-Fi encontrado
     async def async_set_wifi() -> None:
         for i in await Radio.get_radios_async():
