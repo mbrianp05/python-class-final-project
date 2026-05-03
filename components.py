@@ -62,7 +62,6 @@ class Sidebar(CTkFrame):
             orientation="vertical",
             fg_color="transparent",
         )
-        self.scrollable_frame.items = {}  # type: ignore # Lista de elementos
         self.scrollable_frame.grid(row=1, column=0, padx=0, pady=0, sticky="ns")
         self.display_gestures_list()
 
