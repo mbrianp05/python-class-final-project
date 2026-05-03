@@ -3,12 +3,13 @@ from typing import Any, Callable, List
 
 import customtkinter as ctk
 import cv2
+import tksvg
 from customtkinter import CTkFrame
 from PIL import Image
 
 import loader
 from gesture import Gesture
-from uiclasses import MouseEventsImagesPack, HighlightTransition
+from uiclasses import HighlightTransition, MouseEventsImagesPack
 from utils import shorten_gesture_name
 
 
@@ -43,7 +44,7 @@ class Sidebar(CTkFrame):
             text_color="white",
             anchor="w",
         )
-        self.header_label.grid(row=0, column=0, sticky="we", padx=(5, 0))
+        self.header_label.grid(row=0, column=0, sticky="we", padx=(10, 0))
 
         icons = loader.get_icons()
 
@@ -77,14 +78,15 @@ class Sidebar(CTkFrame):
                 ),
             )
 
-            self.scrollable_frame.items[i] = item  # type: ignore # Guardar referencias a cada elemento
             item.grid(row=i, column=0, padx=(0, 0), pady=0, sticky="ew")
 
     def highlight_gesture(self, index: int = 0):
-        if index < len(self.scrollable_frame.items):  # type: ignore
-            self.scrollable_frame.items[index].highlight()  # type: ignore
+        labels = list(self.scrollable_frame.children.values())
+
+        if index < len(labels):  # type: ignore
+            labels[index].highlight()  # type: ignore
         else:
-            raise IndexError(f"Index [{index}] was out of bounds.")
+            raise IndexError(f"Index [{index}] out of bounds.")
 
 
 class Camera(ctk.CTkFrame):
@@ -151,13 +153,14 @@ class CustomButton(ctk.CTkLabel):
 
         self.bind("<Enter>", self.on_enter)
         self.bind("<Leave>", self.on_leave)
-        self.bind("<Down>", self.on_click)  # Cambiar a <Button-1> o <ButtonRelease-1>
+        self.bind("<ButtonRelease-1>", self.on_click)
 
         self.configure(image=self.images_pack.noEvent)
 
     # Hay que implementar el click cuando se presione el boton
     # usando la propiedad command
     def on_click(self, _):
+        print("hello")
         pass
 
     def on_leave(self, _):
@@ -180,12 +183,19 @@ class IconButton(CustomButton):
 
 # Label con resaltado para lista de gestos
 class ActivationFeedbackLabel(ctk.CTkLabel):
-    def __init__(self, master, text, font, image, transition):
+    def __init__(
+        self,
+        master,
+        text: str,
+        transition: HighlightTransition,
+        font: ctk.CTkFont | None = None,
+        image: tksvg.SvgImage | None = None,
+    ):
         super().__init__(
             master,
             text=f"  {text}",  # el espacio es para que el texto no se vea tan pegado al icono
             font=font,
-            image=image,
+            image=image,  # type: ignore
             height=45,
             fg_color="transparent",
             compound="left",
@@ -206,13 +216,11 @@ class ActivationFeedbackLabel(ctk.CTkLabel):
     def highlight(self):
         if not self.transition.state:
             self.transition.state = True
-            timer = int(self.transition.duration/self.transition.pulses)
+            timer = int(self.transition.duration / self.transition.pulses)
             for i in range(self.transition.pulses):
                 self.after((2 * i) * timer, lambda: self.glow())
 
-                self.after(
-                    (2 * i + 1) * timer, lambda: self.normalize()
-                )
+                self.after((2 * i + 1) * timer, lambda: self.normalize())
 
             self.after(
                 (2 * self.transition.pulses) * timer,
