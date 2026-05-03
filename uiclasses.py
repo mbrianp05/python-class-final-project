@@ -14,7 +14,9 @@ class MouseEventsImagesPack:
 
 
 @dataclass
-class HiglightingTransition:
+class HighlightTransition:
     fg_color: str
     text_color: str
     duration: int
+    pulses: int
+    state: bool = False

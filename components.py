@@ -3,13 +3,12 @@ from typing import Any, Callable, List
 
 import customtkinter as ctk
 import cv2
-import tksvg
 from customtkinter import CTkFrame
 from PIL import Image
 
 import loader
 from gesture import Gesture
-from uiclasses import MouseEventsImagesPack
+from uiclasses import MouseEventsImagesPack, HighlightTransition
 from utils import shorten_gesture_name
 
 
@@ -67,58 +66,23 @@ class Sidebar(CTkFrame):
         self.display_gestures_list()
 
     def display_gestures_list(self):
-        generic_gesture_icon = tksvg.SvgImage(
-            file="./icons/generic-gesture.svg", scaletoheight=25
-        )
-
         for i, gesture in enumerate(self.gestures):
-            name = shorten_gesture_name(gesture.name)
-
-            # CAMBIAR AQUI EL LABEL POR EL COMPONENTE IMPLEMENTADO DE HIGHLIGHTING
-            item = ctk.CTkLabel(
+            item = ActivationFeedbackLabel(
                 self.scrollable_frame,
-                height=45,
-                text=f"  {name}",  # el espacio es para que el texto no se vea tan pegado al icono
-                image=generic_gesture_icon,  # type: ignore
-                fg_color="transparent",
-                compound="left",
-                font=self.bold_font,
-                anchor="w",
-                corner_radius=30,
+                text=shorten_gesture_name(gesture.name),
+                font=loader.get_fonts()["bold"],
+                image=loader.get_icons()["generic-gesture"],
+                transition=HighlightTransition(
+                    fg_color="#3A8CFF", text_color="#fff", duration=500, pulses=2
+                ),
             )
 
             self.scrollable_frame.items[i] = item  # type: ignore # Guardar referencias a cada elemento
             item.grid(row=i, column=0, padx=(0, 0), pady=0, sticky="ew")
 
-    # . LEER .
-    # HAY QUE SACAR ESTO A UN COMPONENTE A PARTE QUE HEREDE DE ctk.CTkLabel
-    # QUE SE LLAME HighlightableLabel O ALGO ASI
-    # PARA USARLO EN LOS ITEMS DE LA LISTA DE GESTOS
-
-    # ADEMAS TE DEJE UNA CLASE uiclasses.HiglightingTransition PARA CONFIGURAR EL HIGHLIGHTING
-    # QUE SE PASARIA DE PARAMETRO AL COMPONENTE
-
-    # POR ULTIMO INTENTA QUE EL HIGHLIGHT SEA UNA ESPECIA DE PARAPEDEO
-    # COMO SI FUERA UN LATIDO DE CORAZON QUE TENGA ESE EFECTO DE COMO QUE "SE ACTIVO ALGO"
-    # MAS QUE DE EFECTO DE QUE PASO EL MOUSE POR ENCIMA
-    def highlight_gesture(self, index: int = 0, duration: int = 500):
+    def highlight_gesture(self, index: int = 0):
         if index < len(self.scrollable_frame.items):  # type: ignore
-            item = self.scrollable_frame.items[index]  # type: ignore
-            if isinstance(item, ctk.CTkLabel):
-                if getattr(item, "highlight", None):
-                    item.after_cancel(item.highlight)  # type: ignore
-
-                # Pasar colores de resaltado como parametros (?)
-                item.configure(fg_color="#3A8CFF", text_color="#fff")
-
-                # Pasar colores originales/nuevos/finales como parametros (?)
-                item.highlight = item.after(  # type: ignore
-                    duration,
-                    lambda: item.configure(
-                        text_color="#DCE4EE", fg_color="transparent"
-                    ),
-                )
-
+            self.scrollable_frame.items[index].highlight()  # type: ignore
         else:
             raise IndexError(f"Index [{index}] was out of bounds.")
 
@@ -187,7 +151,7 @@ class CustomButton(ctk.CTkLabel):
 
         self.bind("<Enter>", self.on_enter)
         self.bind("<Leave>", self.on_leave)
-        self.bind("<Down>", self.on_click)
+        self.bind("<Down>", self.on_click)  # Cambiar a <Button-1> o <ButtonRelease-1>
 
         self.configure(image=self.images_pack.noEvent)
 
@@ -212,3 +176,45 @@ class IconButton(CustomButton):
         command: Callable[[], Any] | None = None,
     ):
         super().__init__(master, "", images_pack, command)
+
+
+# Label con resaltado para lista de gestos
+class ActivationFeedbackLabel(ctk.CTkLabel):
+    def __init__(self, master, text, font, image, transition):
+        super().__init__(
+            master,
+            text=f"  {text}",  # el espacio es para que el texto no se vea tan pegado al icono
+            font=font,
+            image=image,
+            height=45,
+            fg_color="transparent",
+            compound="left",
+            anchor="w",
+            corner_radius=30,
+        )
+        self.transition = transition
+        # self.transition.state = False
+
+    def normalize(self):
+        self.configure(text_color="#DCE4EE", fg_color="transparent")
+
+    def glow(self):
+        self.configure(
+            fg_color=self.transition.fg_color, text_color=self.transition.text_color
+        )
+
+    def highlight(self):
+        if not self.transition.state:
+            self.transition.state = True
+            timer = int(self.transition.duration/self.transition.pulses)
+            for i in range(self.transition.pulses):
+                self.after((2 * i) * timer, lambda: self.glow())
+
+                self.after(
+                    (2 * i + 1) * timer, lambda: self.normalize()
+                )
+
+            self.after(
+                (2 * self.transition.pulses) * timer,
+                lambda: setattr(self.transition, "state", not self.transition.state),
+            )

@@ -17,4 +17,5 @@ def get_icons():
     return {
         "gear": tksvg.SvgImage(file="./icons/gear.svg", scaletoheight=26),
         "gear_darker": tksvg.SvgImage(file="./icons/gear_darker.svg", scaletoheight=26),
+        "generic-gesture": tksvg.SvgImage(file="./icons/generic-gesture.svg", scaletoheight=25),
     }
