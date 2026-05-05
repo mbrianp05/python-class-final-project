@@ -19,4 +19,4 @@ class HighlightTransition:
     text_color: str
     duration: int
     pulses: int
-    state: bool = False
+    is_running: bool = False

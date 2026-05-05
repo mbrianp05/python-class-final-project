@@ -107,7 +107,7 @@ class Camera(ctk.CTkFrame):
         time.sleep(0.6)
 
         if not self.cap.isOpened():
-            print("ERROR - Not opened")
+            raise Exception("App cannot launch without a camera")
 
         self.show_frames()
 
@@ -159,8 +159,8 @@ class CustomButton(ctk.CTkLabel):
     # Hay que implementar el click cuando se presione el boton
     # usando la propiedad command
     def on_click(self, _):
-        print("hello")
-        pass
+        if self.command is not None:
+            self.command()
 
     def on_leave(self, _):
         self.configure(image=self.images_pack.noEvent)
@@ -202,7 +202,6 @@ class ActivationFeedbackLabel(ctk.CTkLabel):
             corner_radius=30,
         )
         self.transition = transition
-        # self.transition.state = False
 
     def normalize(self):
         self.configure(text_color="#DCE4EE", fg_color="transparent")
@@ -213,8 +212,8 @@ class ActivationFeedbackLabel(ctk.CTkLabel):
         )
 
     def highlight(self):
-        if not self.transition.state:
-            self.transition.state = True
+        if not self.transition.is_running:
+            self.transition.is_running = True
             timer = int(self.transition.duration / self.transition.pulses)
             for i in range(self.transition.pulses):
                 self.after((2 * i) * timer, lambda: self.glow())
@@ -223,5 +222,7 @@ class ActivationFeedbackLabel(ctk.CTkLabel):
 
             self.after(
                 (2 * self.transition.pulses) * timer,
-                lambda: setattr(self.transition, "state", not self.transition.state),
+                lambda: setattr(
+                    self.transition, "state", not self.transition.is_running
+                ),
             )
