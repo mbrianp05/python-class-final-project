@@ -12,7 +12,7 @@ from utilityclasses import Finger, HandProfile
 class GestureData:
     hands: Literal[0, 1, 2] = 0
     visibleFingers: Tuple[List[Finger], List[Finger]] = ([], [])
-    profile: HandProfile | None = None
+    profile: Tuple[HandProfile, HandProfile] | None = None
 
 
 # Cuando el usuario configura un gesto como por ejemplo
