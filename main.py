@@ -1,10 +1,10 @@
 import warnings
+
 import customtkinter as ctk
 
 import loader
-from components import Camera, Sidebar
-from services import fetch_gestures
 from utils import verify_os
+from widgets import Camera, Sidebar
 
 loader.load_fonts_files()
 
@@ -19,7 +19,7 @@ class App(ctk.CTk):
 
         self.title("Reconocimiento de gestos")
 
-        self.configure_layout()
+        self.set_layout()
         self.maximize_window()
 
     def highlight_gesture(self, event):
@@ -31,7 +31,7 @@ class App(ctk.CTk):
             "zoomed"  # Para maximizar la ventana
         )
 
-    def configure_layout(self):
+    def set_layout(self):
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
 
@@ -39,7 +39,7 @@ class App(ctk.CTk):
         self.display_camera()
 
     def display_sidebar(self):
-        self.sidebar = Sidebar(self, fetch_gestures())
+        self.sidebar = Sidebar(self)
         self.sidebar.grid(column=0, row=0, sticky="ns")
 
     def display_camera(self):
