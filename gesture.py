@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Literal, Tuple
+from typing import Callable, Dict, Literal, Tuple
 
-from utilityclasses import Finger
+from utilityclasses import Finger, HandProfile
 
 
 # Cuando el usuario configura un gesto como por ejemplo
@@ -10,8 +10,8 @@ from utilityclasses import Finger
 @dataclass(frozen=True)
 class Gesture[T]:
     name: str
-    trigger: Callable[[List[T]], None]
-    params: List[T]
+    trigger: Callable[[T], None]
+    params: T
 
 
 # En esta clase se guarda toda la data
@@ -22,6 +22,8 @@ class Gesture[T]:
 class GestureData:
     hands: Literal[0, 1, 2]
     visibleFingers: Tuple[Dict[Finger, bool], Dict[Finger, bool]]
+    # Creame Propiedad para saber si la mano se ve por la palma, el puño, el lateral
+    profile: HandProfile
 
 
 # Esta clase se encargara de manejar la logica detectar un gesto
