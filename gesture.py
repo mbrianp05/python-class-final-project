@@ -1,3 +1,5 @@
+import os
+import urllib.request
 from dataclasses import dataclass
 from typing import Callable, List, Literal, Tuple
 
@@ -45,7 +47,14 @@ class GestureRecognition:
 
         self.init_model()
 
+    def download_if_not_exists(self, model_path):
+        if not os.path.exists(model_path):
+            print("Descargando modelo...")
+            url = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
+            urllib.request.urlretrieve(url, model_path)
+
     def init_model(self, model_path="hand_landmarker.task"):
+        self.download_if_not_exists(model_path)
         base_options = python.BaseOptions(model_asset_path=model_path)
 
         self.options = vision.HandLandmarkerOptions(
