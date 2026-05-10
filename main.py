@@ -28,7 +28,7 @@ class App(ctk.CTk):
 
     def maximize_window(self):
         self._state_before_windows_set_titlebar_color = (
-            "zoomed"  # Para maximizar la ventana
+            "zoomed"
         )
 
     def set_layout(self):

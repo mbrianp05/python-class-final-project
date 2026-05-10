@@ -1,5 +1,6 @@
 import os
 import sys
+import warnings
 
 ALLOWED_OS_PREFIXES = ("win",)
 
@@ -37,3 +38,9 @@ def get_color_palette():
         "border": "#334155",
         "accent": "#0EA5E9",
     }
+
+
+def supress_warnings():
+    warnings.filterwarnings(
+        "ignore", message=".*Image can not be scaled on HighDPI displays*."
+    )
