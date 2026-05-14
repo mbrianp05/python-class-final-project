@@ -18,7 +18,7 @@ def fetch_gestures() -> List[Gesture]:
 
     return [
         Gesture(
-            name="Abrir explorador",
+            name="Disco D:/",
             trigger=lambda path: actions.open_explorer_at(path),  # type: ignore
             param="D:\\Apps",
             settings=data,
