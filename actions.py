@@ -15,6 +15,8 @@ from PIL import ImageGrab
 from pycaw.pycaw import AudioUtilities
 from winrt.windows.devices.radios import Radio, RadioKind, RadioState
 
+import utils
+
 
 # abrir el explorador en esa carpeta
 def open_explorer_at(path: str) -> None:
@@ -31,15 +33,20 @@ def open_file_with_default_app(filepath: str) -> None:
     subprocess.run(["start", "", filepath], shell=True, check=True)
 
 
-def set_volume(level: float) -> None:
-    level = max(0.0, min(level, 1.0))
+def set_volume(delta_level: float) -> None:
+    delta_level = utils.clamp(0.0, delta_level, 0.0)
 
     device = AudioUtilities.GetSpeakers()
-    volume = device.EndpointVolume  # type: ignore
-    volume.SetMasterVolumeLevelScalar(level, None)
+
+    if device is not None:
+        volume = device.EndpointVolume
+        new_level = max(
+            0.0, min(1.0, volume.GetMasterVolumeLevelScalar() + delta_level)
+        )
+        volume.SetMasterVolumeLevelScalar(new_level, None)
 
 
-def set_wifi(enable: bool) -> None:
+def set_wifi_state(enable: bool) -> None:
     state = RadioState.ON if enable else RadioState.OFF
 
     # Actualizar estado del primer dispositivo Wi-Fi encontrado
@@ -52,6 +59,11 @@ def set_wifi(enable: bool) -> None:
     asyncio.run(async_set_wifi())
 
 
-def take_screenshot(path_plus_name: str) -> None:
+def take_screenshot() -> None:
     screenshot = ImageGrab.grab()
-    screenshot.save(path_plus_name)
+    path_plus_name = utils.get_save_path()
+
+    print(path_plus_name)
+
+    if path_plus_name:
+        screenshot.save(path_plus_name)

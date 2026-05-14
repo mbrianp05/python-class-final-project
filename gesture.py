@@ -26,11 +26,11 @@ class GestureData:
 # abrir carpeta debe pasar indicar el path de la carpeta como un string
 # por ende se crea una instancia de Gesture[str] con "param" con el valor del "path"
 @dataclass(frozen=True)
-class Gesture[T]:
+class Gesture:
     name: str
-    trigger: Callable[[T], None]
+    trigger: Callable[[str | None], None]
     settings: GestureData
-    param: T | None = None
+    param: str | None = None
 
 
 # Esta clase se encargara de manejar la logica detectar un gesto
