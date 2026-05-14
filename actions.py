@@ -61,10 +61,9 @@ def set_wifi_state(enable: bool) -> None:
 
 def take_screenshot() -> None:
     screenshot = ImageGrab.grab()
+    path_plus_name = utils.get_save_path()
 
-    # De momento vamos a poner un path forzado
-    # lo mejor seria como dije navegar con una ventana del explorador
-    # hasta la ubicacion deseada como "guardar como"
-    path_plus_name = "D:\\"
+    print(path_plus_name)
 
-    screenshot.save(path_plus_name)
+    if path_plus_name:
+        screenshot.save(path_plus_name)

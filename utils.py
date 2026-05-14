@@ -1,6 +1,7 @@
 import os
 import sys
 import warnings
+from tkinter import filedialog
 
 ALLOWED_OS_PREFIXES = ("win",)
 
@@ -44,6 +45,23 @@ def supress_warnings():
     warnings.filterwarnings(
         "ignore", message=".*Image can not be scaled on HighDPI displays*."
     )
+
+
+def get_save_path() -> str:
+    file_path = filedialog.asksaveasfilename(
+        initialdir="/",
+        title="Secciona la ubicación de la captura de pantalla",
+        defaultextension=".png",
+        filetypes=[
+            ("Archivo PNG", "*.png"),
+            ("Archivo JPEG", "*.jpg;*.jpeg"),
+            ("Archivo BMP", "*.bmp"),
+            ("Todos los archivos", "*.*"),
+        ],
+        initialfile="captura.png",
+    )
+
+    return file_path
 
 
 def clamp(min, value, max):
