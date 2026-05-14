@@ -30,7 +30,7 @@ class Gesture:
     name: str
     trigger: Callable[[str], None]
     settings: GestureData
-    param: str
+    param: str | None = None
 
 
 # Esta clase se encargara de manejar la logica detectar un gesto
