@@ -44,7 +44,7 @@ def set_volume(delta_level: float) -> None:
         volume.SetMasterVolumeLevelScalar(new_level, None)
 
 
-def set_wifi(enable: bool) -> None:
+def set_wifi_state(enable: bool) -> None:
     state = RadioState.ON if enable else RadioState.OFF
 
     # Actualizar estado del primer dispositivo Wi-Fi encontrado
@@ -57,6 +57,12 @@ def set_wifi(enable: bool) -> None:
     asyncio.run(async_set_wifi())
 
 
-def take_screenshot(path_plus_name: str) -> None:
+def take_screenshot() -> None:
     screenshot = ImageGrab.grab()
+
+    # De momento vamos a poner un path forzado
+    # lo mejor seria como dije navegar con una ventana del explorador
+    # hasta la ubicacion deseada como "guardar como"
+    path_plus_name = "D:\\"
+
     screenshot.save(path_plus_name)
