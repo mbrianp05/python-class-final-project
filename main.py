@@ -1,16 +1,11 @@
-import warnings
-
 import customtkinter as ctk
 
 import loader
-from utils import verify_os
+from utils import supress_warnings, verify_os
 from widgets import Camera, Sidebar
 
 loader.load_fonts_files()
-
-warnings.filterwarnings(
-    "ignore", message=".*Image can not be scaled on HighDPI displays*."
-)
+supress_warnings()
 
 
 class App(ctk.CTk):
@@ -27,9 +22,7 @@ class App(ctk.CTk):
             self.sidebar.highlight_gesture(int(event.char))
 
     def maximize_window(self):
-        self._state_before_windows_set_titlebar_color = (
-            "zoomed"
-        )
+        self._state_before_windows_set_titlebar_color = "zoomed"
 
     def set_layout(self):
         self.columnconfigure(1, weight=1)
