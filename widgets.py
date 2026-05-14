@@ -10,14 +10,16 @@ from PIL import Image
 import loader
 from gesture import GestureRecognition
 from services import fetch_gestures
-from uiclasses import HighlightTransition, MouseEventsImagesPack
+from uiclasses import HighlightTransition, MouseEventsImagesPack, Views
 from utils import shorten_gesture_name
 
 
 class Sidebar(CTkFrame):
-    def __init__(self, master):
+    def __init__(self, master, controller):
         super().__init__(master, fg_color="transparent", width=200)
         self.gestures = fetch_gestures()
+
+        self.controller = controller
 
         self.set_layout()
         self.init_fonts()
@@ -56,7 +58,11 @@ class Sidebar(CTkFrame):
             mouseEnter=icons["gear_darker"],
         )
 
-        self.configure_gestures_label = IconButton(self.header, images_pack=images_pack)
+        self.configure_gestures_label = IconButton(
+            self.header,
+            images_pack=images_pack,
+            command=lambda: self.controller.show(Views.SETTINGS_VIEW),
+        )
         self.configure_gestures_label.grid(row=0, column=1, pady=(5, 0))
 
     def create_scrollbar_panel(self):
@@ -95,7 +101,6 @@ class Camera(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
 
-        self.recognizer = GestureRecognition(fetch_gestures())
         self.configure(fg_color="transparent")
 
         self.set_layout()
@@ -110,6 +115,8 @@ class Camera(ctk.CTkFrame):
         self.rowconfigure(0, weight=1)
 
     def init_camera(self):
+        self.recognizer = GestureRecognition(fetch_gestures())
+
         self.cap = cv2.VideoCapture(0, cv2.CAP_ANY)
         time.sleep(0.6)
 

@@ -2,7 +2,7 @@ import customtkinter as ctk
 
 import loader
 from utils import supress_warnings, verify_os
-from widgets import Camera, Sidebar
+from views import ConfigureGesturesView, GestureDetectionView, Views
 
 loader.load_fonts_files()
 supress_warnings()
@@ -14,40 +14,55 @@ class App(ctk.CTk):
 
         self.title("Reconocimiento de gestos")
 
-        self.set_layout()
+        self.views = {}
+
+        self.set_views()
         self.maximize_window()
 
-    def highlight_gesture(self, event):
-        if event.char.isdigit():
-            self.sidebar.highlight_gesture(int(event.char))
+    def set_views(self):
+        self.views[Views.DETECTION_VIEW] = GestureDetectionView(self)
+        self.views[Views.SETTINGS_VIEW] = ConfigureGesturesView(self)
+
+        # Esto es temporal
+        self.bind("<Key>", self.views[Views.DETECTION_VIEW].highlight_gesture)
+
+        for view in self.views.values():
+            view.pack(fill="both", expand=True)
+
+        self.show_main()
+
+    def show_main(self):
+        main: Views | None = None
+
+        for name, view in self.views.items():
+            if getattr(view, "is_main", False) is True:
+                main = name
+
+        if main is None:
+            main = list(self.views.keys())[0]
+
+        self.show(main)
+
+    def show(self, active_view):
+        for view in self.views.values():
+            view.pack_forget()
+
+        self.views[active_view].pack(fill="both", expand=True)
 
     def maximize_window(self):
         self._state_before_windows_set_titlebar_color = "zoomed"
 
-    def set_layout(self):
-        self.columnconfigure(1, weight=1)
-        self.rowconfigure(0, weight=1)
-
-        self.display_sidebar()
-        self.display_camera()
-
-    def display_sidebar(self):
-        self.sidebar = Sidebar(self)
-        self.sidebar.grid(column=0, row=0, sticky="ns")
-
-    def display_camera(self):
-        self.camera_frame = Camera(self)
-        self.camera_frame.grid(row=0, column=1, sticky="nswe")
-
     def on_closing(self):
-        self.camera_frame.on_closing()
+        for view in self.views.values():
+            getattr(view, "on_closing", lambda: None)()
 
 
 if __name__ == "__main__":
     verify_os()
 
     app = App()
-    app.bind("<Key>", app.highlight_gesture)
 
     app.geometry(f"{app.winfo_screenwidth()}x{app.winfo_screenheight()}+0+0")
     app.mainloop()
+
+    app.on_closing()
