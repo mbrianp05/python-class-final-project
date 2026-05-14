@@ -19,25 +19,25 @@ def fetch_gestures() -> List[Gesture]:
     return [
         Gesture(
             name="Abrir explorador",
-            trigger=lambda path: actions.open_explorer_at(path),
+            trigger=lambda path: actions.open_explorer_at(path),  # type: ignore
             param="D:\\Apps",
             settings=data,
         ),
         Gesture(
             name="Abrir editor",
-            trigger=lambda exe_path: actions.run_program(exe_path),
+            trigger=lambda exe_path: actions.open_file_with_default_app(exe_path),  # type: ignore
             param="C:\\Users\\user\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Visual Studio Code\\Visual Studio Code",
             settings=data,
         ),
         Gesture(
             name="Subir volumen",
-            trigger=lambda delta: actions.set_volume(float(delta)),
+            trigger=lambda delta: actions.set_volume(float(delta)),  # type: ignore
             param="0.2",
             settings=data,
         ),
         Gesture(
             name="Bajar volumen",
-            trigger=lambda delta: actions.set_volume(float(delta)),
+            trigger=lambda delta: actions.set_volume(float(delta)),  # type: ignore
             param="-0.2",
             settings=data,
         ),
@@ -55,7 +55,7 @@ def fetch_gestures() -> List[Gesture]:
         ),
         Gesture(
             name="Reproducir canción",
-            trigger=lambda path: actions.open_file_with_default_app(path),
+            trigger=lambda path: actions.open_file_with_default_app(path),  # type: ignore
             param="D:\\Songs\\Metallica - Black Album\\08 - Nothing Else Matters.mp3",
             settings=data,
         ),
@@ -67,7 +67,7 @@ def fetch_gestures() -> List[Gesture]:
         ),
         Gesture(
             name="Abrir navegador",
-            trigger=lambda exe_path: actions.run_program(exe_path),
+            trigger=lambda exe_path: actions.open_file_with_default_app(exe_path),  # type: ignore
             param="C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Google Chrome",
             settings=data,
         ),
