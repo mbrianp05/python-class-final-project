@@ -1,6 +1,7 @@
 import os
 import sys
 import warnings
+from datetime import datetime
 from tkinter import filedialog
 
 ALLOWED_OS_PREFIXES = ("win",)
@@ -48,6 +49,9 @@ def supress_warnings():
 
 
 def get_save_path() -> str:
+    now = datetime.now()
+    sample_name = now.strftime("%Y-%m-%d %H:%M:%S") + ".png"
+
     file_path = filedialog.asksaveasfilename(
         initialdir="/",
         title="Secciona la ubicación de la captura de pantalla",
@@ -58,7 +62,7 @@ def get_save_path() -> str:
             ("Archivo BMP", "*.bmp"),
             ("Todos los archivos", "*.*"),
         ],
-        initialfile="captura.png",
+        initialfile=sample_name,
     )
 
     return file_path
