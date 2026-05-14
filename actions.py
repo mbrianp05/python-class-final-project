@@ -31,12 +31,17 @@ def open_file_with_default_app(filepath: str) -> None:
     subprocess.run(["start", "", filepath], shell=True, check=True)
 
 
-def set_volume(level: float) -> None:
-    level = max(0.0, min(level, 1.0))
+def set_volume(delta_level: float) -> None:
+    delta_level = max(0.0, min(delta_level, 1.0))
 
     device = AudioUtilities.GetSpeakers()
-    volume = device.EndpointVolume  # type: ignore
-    volume.SetMasterVolumeLevelScalar(level, None)
+
+    if device is not None:
+        volume = device.EndpointVolume
+        new_level = max(
+            0.0, min(1.0, volume.GetMasterVolumeLevelScalar() + delta_level)
+        )
+        volume.SetMasterVolumeLevelScalar(new_level, None)
 
 
 def set_wifi(enable: bool) -> None:
