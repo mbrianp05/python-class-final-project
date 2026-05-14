@@ -44,3 +44,13 @@ def supress_warnings():
     warnings.filterwarnings(
         "ignore", message=".*Image can not be scaled on HighDPI displays*."
     )
+
+
+def clamp(min, value, max):
+    if value < min:
+        return min
+
+    if value > max:
+        return max
+
+    return value

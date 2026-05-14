@@ -15,6 +15,8 @@ from PIL import ImageGrab
 from pycaw.pycaw import AudioUtilities
 from winrt.windows.devices.radios import Radio, RadioKind, RadioState
 
+import utils
+
 
 # abrir el explorador en esa carpeta
 def open_explorer_at(path: str) -> None:
@@ -32,7 +34,7 @@ def open_file_with_default_app(filepath: str) -> None:
 
 
 def set_volume(delta_level: float) -> None:
-    delta_level = max(0.0, min(delta_level, 1.0))
+    delta_level = utils.clamp(0.0, delta_level, 0.0)
 
     device = AudioUtilities.GetSpeakers()
 
