@@ -59,7 +59,7 @@ class GestureRecognition:
 
         self.options = vision.HandLandmarkerOptions(
             base_options=base_options,
-            running_mode=vision.RunningMode.VIDEO,
+            running_mode=vision.RunningMode.IMAGE,
             num_hands=2,
             min_hand_detection_confidence=0.5,
             min_hand_presence_confidence=0.5,
@@ -76,7 +76,8 @@ class GestureRecognition:
             20,
         ]  # Pulgar, índice, medio, anular, meñique
         self.finger_pip_indices = [3, 6, 10, 14, 18]  # Articulaciones inferiores
-        self.finger_names = ["Pulgar", "Índice", "Medio", "Anular", "Meñique"]
+        # self.finger_names = ["Pulgar", "Índice", "Medio", "Anular", "Meñique"]
+        self.finger_names = [i.value for i in Finger]
 
     # Condición necesaria para habilitar
     # la ejecucion de gestos tras un gesto hecho
@@ -88,13 +89,14 @@ class GestureRecognition:
     # PRUEBA ESTA FUNCION Y DEBUGGEA LO QUE DEVUELVE
     # Develve la info del frame actual
     # Devuelve None si ninguna de las manos aparecen en la camara
-    def _retrieve_gesture_data(self, frame):
+    def _retrieve_gesture_data(self, frame) -> GestureData | None:
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame_rgb)
         detection_result = self.detector.detect(mp_image)
 
         hands_info = []
         h, w, _ = frame.shape
+        temp = 0
 
         if detection_result.hand_landmarks:
             for idx, (hand_landmarks, handedness) in enumerate(
@@ -110,6 +112,7 @@ class GestureRecognition:
 
                 # Contar dedos levantados
                 fingers_binary = self._count_fingers_up(landmarks, hand_type)
+                temp = sum(fingers_binary)
 
                 # Obtener nombres de dedos levantados
                 fingers_up_names = [
@@ -122,12 +125,15 @@ class GestureRecognition:
                     {
                         "type": hand_type,
                         "fingers": fingers_up_names,
-                        "fingers_count": sum(fingers_binary),
-                        "fingers_binary": fingers_binary,
+                        # "fingers_count": sum(fingers_binary),
+                        # "fingers_binary": fingers_binary,
                     }
                 )
 
-        print({"num_hands": len(hands_info), "hands": hands_info})
+        if len(hands_info) + temp != 0:
+            print({"num_hands": len(hands_info), "hands": hands_info})
+
+        return None
 
     def _count_fingers_up(self, landmarks, hand_type):
         """
