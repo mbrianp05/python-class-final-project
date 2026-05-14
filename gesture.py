@@ -28,7 +28,7 @@ class GestureData:
 @dataclass(frozen=True)
 class Gesture:
     name: str
-    trigger: Callable[[str], None]
+    trigger: Callable[[str | None], None]
     settings: GestureData
     param: str | None = None
 
