@@ -1,10 +1,12 @@
 import customtkinter as ctk
 
 import loader
-from utils import supress_warnings, verify_os
-from views import ConfigureGesturesView, GestureDetectionView, Views
+from uiclasses import View
+from utils import create_config_file_if_not_exists, supress_warnings, verify_os
+from views import ConfigureGesturesView, GestureDetectionView
 
 loader.load_fonts_files()
+create_config_file_if_not_exists()
 supress_warnings()
 
 
@@ -20,11 +22,11 @@ class App(ctk.CTk):
         self.maximize_window()
 
     def set_views(self):
-        self.views[Views.DETECTION_VIEW] = GestureDetectionView(self)
-        self.views[Views.SETTINGS_VIEW] = ConfigureGesturesView(self)
+        self.views[View.DETECTION_VIEW] = GestureDetectionView(self)
+        self.views[View.SETTINGS_VIEW] = ConfigureGesturesView(self)
 
         # Esto es temporal
-        self.bind("<Key>", self.views[Views.DETECTION_VIEW].highlight_gesture)
+        self.bind("<Key>", self.views[View.DETECTION_VIEW].highlight_gesture)
 
         for view in self.views.values():
             view.pack(fill="both", expand=True)
@@ -32,7 +34,7 @@ class App(ctk.CTk):
         self.show_main()
 
     def show_main(self):
-        main: Views | None = None
+        main: View | None = None
 
         for name, view in self.views.items():
             if getattr(view, "is_main", False) is True:

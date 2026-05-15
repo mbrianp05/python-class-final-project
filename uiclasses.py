@@ -7,7 +7,7 @@ import tksvg
 # DE ELEMENTOS DE LA INTERFAZ DE USUARIO
 
 
-class Views(Enum):
+class View(Enum):
     DETECTION_VIEW = "main"
     SETTINGS_VIEW = "settings"
 
