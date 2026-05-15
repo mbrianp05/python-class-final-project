@@ -133,7 +133,11 @@ class GestureRecognition:
 
         if len(hands_info) + temp != 0:
             print({"num_hands": len(hands_info), "hands": hands_info})
-
+            return GestureData(
+                hands=len(hands_info),
+                visibleFingers=(hands_info[0]["fingers"], []),
+                profile=None,
+            )
         return None
 
     def _count_fingers_up(self, landmarks, hand_type):
