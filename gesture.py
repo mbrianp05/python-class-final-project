@@ -133,11 +133,22 @@ class GestureRecognition:
 
         if len(hands_info) + temp != 0:
             print({"num_hands": len(hands_info), "hands": hands_info})
+            # HAY QUE VER CUAL ES LA MANO QUE SE VEN
+            # LA PRIMERA ES LA IZQUIERDA Y LA SEGUNDA LA DERECHA
+            hands = (False, False)
+
+            if len(hands_info) == 1:
+                hands = (True, False)
+
+            if len(hands_info) == 2:
+                hands = (True, True)
+
             return GestureData(
-                hands=len(hands_info),
+                hands=hands,
                 visibleFingers=(hands_info[0]["fingers"], []),
-                profile=None,
+                profile=(None, None),
             )
+
         return None
 
     def _count_fingers_up(self, landmarks, hand_type):
