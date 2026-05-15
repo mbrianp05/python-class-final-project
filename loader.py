@@ -13,12 +13,19 @@ def get_fonts():
     }
 
 
-def get_icons():
+def get_icons(scale: int = 25):
     return {
-        "gear": tksvg.SvgImage(file="./icons/gear.svg", scaletoheight=26),
-        "gear_darker": tksvg.SvgImage(file="./icons/gear_darker.svg", scaletoheight=26),
-        "generic-gesture": tksvg.SvgImage(
-            file="./icons/generic-gesture.svg", scaletoheight=25
+        "gear": tksvg.SvgImage(file="./icons/gear.svg", scaletoheight=scale),
+        "gear_darker": tksvg.SvgImage(
+            file="./icons/gear-darker.svg", scaletoheight=scale
         ),
-        "arrow_left": tksvg.SvgImage(file="./icons/arrow-left.svg", scaletoheight=40),
+        "generic-gesture": tksvg.SvgImage(
+            file="./icons/generic-gesture.svg", scaletoheight=scale
+        ),
+        "arrow_left": tksvg.SvgImage(
+            file="./icons/arrow-left.svg", scaletoheight=scale
+        ),
+        "arrow_left_darker": tksvg.SvgImage(
+            file="./icons/arrow-left-darker.svg", scaletoheight=scale
+        ),
     }
