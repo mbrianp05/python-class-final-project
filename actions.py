@@ -10,6 +10,7 @@
 
 import asyncio
 import subprocess
+from enum import StrEnum
 
 from PIL import ImageGrab
 from pycaw.pycaw import AudioUtilities
@@ -61,9 +62,18 @@ def set_wifi_state(enable: bool) -> None:
 
 def take_screenshot() -> None:
     screenshot = ImageGrab.grab()
-    path_plus_name = utils.get_save_path()
+    path_plus_name = utils.save_photo_path()
 
     print(path_plus_name)
 
     if path_plus_name:
         screenshot.save(path_plus_name)
+
+
+class Action(StrEnum):
+    SET_VOLUME = "set_volume"
+    SET_WIFI_STATE = "set_wifi_state"
+    TAKE_SCREENSHOT = "take_screenshot"
+    OPEN_FILE = "open_file"
+    OPEN_FOLDER = "open_folder"
+    RUN_RROGRAM = "run_program"
