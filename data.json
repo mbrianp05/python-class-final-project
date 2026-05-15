@@ -85,7 +85,7 @@
     "settings": {
       "hands": [true, true],
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
-      "profile": null
+      "profile": ["palm", null]
     },
     "param": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Google Chrome"
   }
