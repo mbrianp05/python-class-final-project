@@ -6,7 +6,7 @@ from tkinter import filedialog
 from typing import Any, Dict
 
 from actions import Action
-from gesture import Gesture, GestureData
+from gesture import Gesture, GestureData, HandProfile
 from utilityclasses import Finger
 
 ALLOWED_OS_PREFIXES = ("win",)
@@ -89,7 +89,21 @@ def turn_dict_into_gesture(data: Dict[Any, Any]) -> Gesture:
         [Finger(f) for f in data["settings"]["visibleFingers"][1]],
     )
 
-    settings = GestureData(hands=hands, visibleFingers=fingers, profile=(None, None))
+    profile = (None, None)
+    profiles = data["settings"]["profile"]
+
+    if profiles is not None:
+        left_hand_profile = (
+            HandProfile(profiles[0]) if profiles[0] is not None else None
+        )
+
+        right_hand_profile = (
+            HandProfile(profiles[1]) if profiles[1] is not None else None
+        )
+
+        profile = (left_hand_profile, right_hand_profile)
+
+    settings = GestureData(hands=hands, visibleFingers=fingers, profile=profile)
 
     gesture = Gesture(
         name=data["name"], settings=settings, effect=Action(data["effect"])
@@ -102,11 +116,10 @@ def turn_gesture_into_dict(gesture: Gesture) -> Dict[Any, Any]:
     profile = []
 
     if gesture.settings.profile is not None:
-        if 0 in gesture.settings.profile:
-            profile.append(gesture.settings.profile[0])
-
-        if 1 in gesture.settings.profile:
-            profile.append(gesture.settings.profile[1])
+        profile = [
+            profile.value if profile is not None else None
+            for profile in gesture.settings.profile
+        ]
 
     if len(profile) == 0:
         profile = None
