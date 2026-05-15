@@ -1,8 +1,6 @@
 import customtkinter as ctk
 
-import loader
-from uiclasses import MouseEventsImagesPack, Views
-from widgets import Camera, IconButton, Sidebar
+from widgets import Camera, SettingsForm, SettingsHeader, Sidebar
 
 
 class GestureDetectionView(ctk.CTkFrame):
@@ -40,16 +38,16 @@ class ConfigureGesturesView(ctk.CTkFrame):
         super().__init__(master)
 
         self.set_layout()
-        self.display_go_back_button()
+        self.display_header()
+        self.display_form()
 
     def set_layout(self):
         self.pack(padx=20, pady=20)
 
-    def display_go_back_button(self):
-        pack = MouseEventsImagesPack(noEvent=loader.get_icons()["arrow_left"])
-        self.nav_button = IconButton(
-            self,
-            images_pack=pack,
-            command=lambda: self.master.show(Views.DETECTION_VIEW),  # type: ignore
-        )
-        self.nav_button.grid(row=0, column=0, padx=10, pady=10)
+    def display_form(self):
+        self.form = SettingsForm(self)
+        self.form.grid(row=1, column=0, padx=40, pady=30)
+
+    def display_header(self):
+        self.header = SettingsHeader(self, controller=self.master)
+        self.header.grid(row=0, column=0, sticky="nwse")
