@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Disco D:/",
+    "effect": "open_folder",
+    "settings": {
+      "hands": [true, true],
+      "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
+      "profile": null
+    },
+    "param": "D:\\Apps"
+  },
+  {
+    "name": "Abrir editor",
+    "effect": "open_file",
+    "settings": {
+      "hands": [true, true],
+      "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
+      "profile": null
+    },
+    "param": "C:\\Users\\user\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Visual Studio Code\\Visual Studio Code"
+  },
+  {
+    "name": "Subir volumen",
+    "effect": "set_volume",
+    "settings": {
+      "hands": [true, true],
+      "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
+      "profile": null
+    },
+    "param": 0.2
+  },
+  {
+    "name": "Bajar volumen",
+    "effect": "set_volume",
+    "settings": {
+      "hands": [true, true],
+      "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
+      "profile": null
+    },
+    "param": -0.2
+  },
+  {
+    "name": "Encender wifi",
+    "effect": "set_wifi_state",
+    "settings": {
+      "hands": [true, true],
+      "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
+      "profile": null
+    },
+    "param": true
+  },
+  {
+    "name": "Apagar wifi",
+    "effect": "set_wifi_state",
+    "settings": {
+      "hands": [true, true],
+      "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
+      "profile": null
+    },
+    "param": false
+  },
+  {
+    "name": "Reproducir canci\u00f3n",
+    "effect": "open_file",
+    "settings": {
+      "hands": [true, true],
+      "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
+      "profile": null
+    },
+    "param": "D:\\Songs\\Metallica - Black Album\\08 - Nothing Else Matters.mp3"
+  },
+  {
+    "name": "Captura de pantalla",
+    "effect": "take_screenshot",
+    "settings": {
+      "hands": [true, true],
+      "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
+      "profile": null
+    },
+    "param": null
+  },
+  {
+    "name": "Abrir navegador",
+    "effect": "open_file",
+    "settings": {
+      "hands": [true, true],
+      "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
+      "profile": null
+    },
+    "param": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Google Chrome"
+  }
+]

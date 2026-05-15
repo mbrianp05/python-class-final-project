@@ -1,13 +1,14 @@
 import os
 import urllib.request
 from dataclasses import dataclass
-from typing import Callable, List, Literal, Tuple
+from typing import List, Tuple
 
 import cv2
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
+from actions import Action
 from utilityclasses import Finger, HandProfile
 
 
@@ -15,22 +16,22 @@ from utilityclasses import Finger, HandProfile
 # relevante que vamos a utilizar para los gestos
 # como el numero de manos que aparecen,
 # la cantidad de dedos levantados, etc.
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class GestureData:
-    hands: Literal[0, 1, 2] = 0
+    hands: tuple[bool, bool]
     visibleFingers: Tuple[List[Finger], List[Finger]] = ([], [])
-    profile: Tuple[HandProfile, HandProfile] | None = None
+    profile: Tuple[HandProfile | None, HandProfile | None] = (None, None)
 
 
 # Cuando el usuario configura un gesto como por ejemplo
 # abrir carpeta debe pasar indicar el path de la carpeta como un string
 # por ende se crea una instancia de Gesture[str] con "param" con el valor del "path"
 @dataclass(frozen=True)
-class Gesture:
+class Gesture[T: str | float | int]:
     name: str
-    trigger: Callable[[str | None], None]
+    effect: Action
     settings: GestureData
-    param: str | None = None
+    param: T | None = None
 
 
 # Esta clase se encargara de manejar la logica detectar un gesto

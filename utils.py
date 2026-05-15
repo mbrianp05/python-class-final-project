@@ -3,6 +3,11 @@ import sys
 import warnings
 from datetime import datetime
 from tkinter import filedialog
+from typing import Any, Dict
+
+from actions import Action
+from gesture import Gesture, GestureData
+from utilityclasses import Finger
 
 ALLOWED_OS_PREFIXES = ("win",)
 
@@ -48,7 +53,7 @@ def supress_warnings():
     )
 
 
-def get_save_path() -> str:
+def save_photo_path() -> str:
     now = datetime.now()
     sample_name = now.strftime("%Y-%m-%d %H:%M:%S") + ".png"
 
@@ -66,6 +71,56 @@ def get_save_path() -> str:
     )
 
     return file_path
+
+
+CONFIG_FILE_NAME = "data.json"
+
+
+def create_config_file_if_not_exists(filename=CONFIG_FILE_NAME):
+    if not os.path.exists(filename):
+        with open(filename, "w"):
+            pass
+
+
+def turn_dict_into_gesture(data: Dict[Any, Any]) -> Gesture:
+    hands = tuple(data["settings"]["hands"])
+    fingers = (
+        [Finger(f) for f in data["settings"]["visibleFingers"][0]],
+        [Finger(f) for f in data["settings"]["visibleFingers"][1]],
+    )
+
+    settings = GestureData(hands=hands, visibleFingers=fingers, profile=(None, None))
+
+    gesture = Gesture(
+        name=data["name"], settings=settings, effect=Action(data["effect"])
+    )
+
+    return gesture
+
+
+def turn_gesture_into_dict(gesture: Gesture) -> Dict[Any, Any]:
+    profile = []
+
+    if gesture.settings.profile is not None:
+        if 0 in gesture.settings.profile:
+            profile.append(gesture.settings.profile[0])
+
+        if 1 in gesture.settings.profile:
+            profile.append(gesture.settings.profile[1])
+
+    if len(profile) == 0:
+        profile = None
+
+    return {
+        "name": gesture.name,
+        "effect": gesture.effect.value,
+        "settings": {
+            "hands": gesture.settings.hands,
+            "visibleFingers": gesture.settings.visibleFingers,
+            "profile": profile,
+        },
+        "param": gesture.param,
+    }
 
 
 def clamp(min, value, max):
