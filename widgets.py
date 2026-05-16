@@ -1,5 +1,6 @@
+import copy
 import time
-from typing import Any, Callable, cast
+from typing import Any, Callable, List, cast
 
 import customtkinter as ctk
 import cv2
@@ -9,7 +10,7 @@ from PIL import Image
 
 import loader
 from gesture import Gesture, GestureRecognition
-from services import fetch_gestures
+from services import fetch_gestures, update_gesture
 from uiclasses import HighlightTransition, MouseEventsImagesPack, View
 from utilityclasses import Finger
 from utils import shorten_gesture_name
@@ -183,7 +184,8 @@ class SettingsForm(ctk.CTkFrame):
         self.configure(fg_color="transparent")
 
         self.gestures = fetch_gestures()
-        self.current_gesture: Gesture | None = (
+
+        self.current_gesture: Gesture | None = copy.deepcopy(
             self.gestures[0] if len(self.gestures) > 0 else None
         )
 
@@ -191,11 +193,25 @@ class SettingsForm(ctk.CTkFrame):
         self.form_panel.grid(row=1, column=0, pady=50)
 
         self.display_current_gesture_selector()
+        self.display_name_field()
         self.display_active_hands_selector()
         self.display_visible_fingers_selector()
+        self.display_action_selector()
         self.display_save_settings_button()
 
         self.adjust_current_configuration_display()
+
+    def display_action_selector(self):
+        pass
+
+    def display_name_field(self):
+        # APLICAR MAX LENGTH !!!!
+
+        text = "" if self.current_gesture is None else self.current_gesture.name
+        self.name_field = ctk.CTkTextbox(self, width=200, height=28, wrap="none")
+        self.name_field.insert("0.0", text)
+        self.name_field.grid(row=0, column=1, padx=30)
+        self.name_field.bind("<KeyRelease>", lambda _: self.update_config())
 
     def display_current_gesture_selector(self):
         self.selector = ctk.CTkComboBox(
@@ -203,11 +219,47 @@ class SettingsForm(ctk.CTkFrame):
         )
         self.selector.grid(row=0, column=0)
 
+    # LEE TODOS LOS WIDGETS DEL FORMULARIO Y CAMBIA EL GESTURE DATA
+    # DE ACUERDO A LA NUEVA CONFIGURACION
     def update_config(self):
         if self.current_gesture is None:
             return
 
-        # self.adjust_current_configuration_display()
+        settings = self.current_gesture.settings
+        self.current_gesture.name = self.name_field.get("0.0", "end").strip(" \n\r")
+
+        # ACTUALIZAR LAS MANOS
+        is_left_hand_active = bool(self.active_left_hand.get())
+        is_right_hand_active = bool(self.active_right_hand.get())
+
+        settings.hands = (is_left_hand_active, is_right_hand_active)
+
+        # ACTUALIZAR LOS DEDOS VISIBLES MARCADOS
+        all_checkboxes = self.get_fingers_selector_checkboxes()
+        hands_fingers = settings.visibleFingers
+
+        for idx, ch in enumerate(all_checkboxes):
+            hand_index = idx % 2
+            hand_fingers = hands_fingers[hand_index]
+            finger_reptr = getattr(ch, "stands_for")
+
+            if bool(ch.get()) and finger_reptr not in hand_fingers:
+                hand_fingers.append(finger_reptr)
+
+            if not bool(ch.get()) and finger_reptr in hand_fingers:
+                hand_fingers.remove(finger_reptr)
+
+        # SI UNA DE LAS MANOS SE DESACTIVAN QUITAR LOS DEDOS VISIBLES
+        # DE ESA MANO
+        left_hand_visible_fingers, right_hand_visible_fingers = settings.visibleFingers
+
+        if not is_left_hand_active:
+            settings.visibleFingers = ([], right_hand_visible_fingers)
+
+        if not is_right_hand_active:
+            settings.visibleFingers = (left_hand_visible_fingers, [])
+
+        self.adjust_current_configuration_display()
 
     def display_active_hands_selector(self):
         self.left_hand_icon = ctk.CTkLabel(self.form_panel, text="Mano izquierda")
@@ -220,12 +272,12 @@ class SettingsForm(ctk.CTkFrame):
             self.form_panel,
             text="",
             command=self.update_config,
-            onvalue="on",
-            offvalue="off",
         )
         self.active_left_hand.grid(row=1, column=0)
 
-        self.active_right_hand = ctk.CTkCheckBox(self.form_panel, text="")
+        self.active_right_hand = ctk.CTkCheckBox(
+            self.form_panel, text="", command=self.update_config
+        )
         self.active_right_hand.grid(row=1, column=1)
 
     def no_settings_status(self):
@@ -235,6 +287,13 @@ class SettingsForm(ctk.CTkFrame):
         for n, ch in self.checkbox_collection_panel.children.items():
             if n.startswith("!ctkcheckbox"):
                 cast(ctk.CTkCheckBox, ch).deselect()
+
+    def get_fingers_selector_checkboxes(self) -> List[ctk.CTkCheckBox]:
+        return [
+            cast(ctk.CTkCheckBox, ch)
+            for n, ch in self.checkbox_collection_panel.children.items()
+            if n.startswith("!ctkcheckbox")
+        ]
 
     # Configura el formulario de forma que concuerde con la
     # informacion del gesto que se esta configurando
@@ -247,7 +306,6 @@ class SettingsForm(ctk.CTkFrame):
         hands_fingers = self.current_gesture.settings.visibleFingers
 
         # ADJUST HANDS NUMBER
-
         is_left_active, is_right_active = self.current_gesture.settings.hands
 
         if is_left_active:
@@ -256,11 +314,7 @@ class SettingsForm(ctk.CTkFrame):
         if is_right_active:
             self.active_right_hand.select()
 
-        all_checkboxes = [
-            ch
-            for n, ch in self.checkbox_collection_panel.children.items()
-            if n.startswith("!ctkcheckbox")
-        ]
+        all_checkboxes = self.get_fingers_selector_checkboxes()
 
         # ADJUST FINGERS
         for idx, ch in enumerate(all_checkboxes):
@@ -270,18 +324,16 @@ class SettingsForm(ctk.CTkFrame):
             hand_index = idx % 2
             hand_fingers = hands_fingers[hand_index]
 
-            checkbox_type = cast(ctk.CTkCheckBox, ch)
-
-            if not is_left_active and hand_index == 0:
-                checkbox_type.configure(state=ctk.DISABLED)
-                continue
-
-            if not is_right_active and hand_index == 1:
-                checkbox_type.configure(state=ctk.DISABLED)
-                continue
+            for idx, is_active in enumerate((is_left_active, is_right_active)):
+                if hand_index == idx:
+                    if not is_active:
+                        ch.configure(state=ctk.DISABLED)
+                        ch.deselect()
+                    else:
+                        ch.configure(state=ctk.NORMAL)
 
             if hand_fingers.count(getattr(ch, "stands_for")) == 1:
-                checkbox_type.select()
+                ch.select()
 
     def display_visible_fingers_selector(self):
         fingers_names = ["Pulgar", "Índice", "Medio", "Anular", "Meñique"]
@@ -304,14 +356,33 @@ class SettingsForm(ctk.CTkFrame):
 
         for idx, name in enumerate(fingers_names):
             for hand_number in range(2):
-                checkbox = ctk.CTkCheckBox(self.checkbox_collection_panel, text=name)
+                checkbox = ctk.CTkCheckBox(
+                    self.checkbox_collection_panel,
+                    text=name,
+                    command=self.update_config,
+                )
                 checkbox.grid(row=idx, column=hand_number, pady=10)
 
                 # GUARDAR QUE DEDO REPRESENTA EL CHECKBOX
                 setattr(checkbox, "stands_for", fingers_repr[idx])
 
+    def save_new_config(self):
+        if self.current_gesture is not None:
+            update_gesture(self.current_gesture)
+
+        self.feedback()
+
+    # PENDIENTE DE IMPLEMENTACIÓN
+    def feedback(self):
+        print("GESTO ACTUALIZADO CORRECTAMENTE")
+
     def display_save_settings_button(self):
-        self.save_button = ctk.CTkButton(self, text="Guardar gesto")
+        self.save_button = ctk.CTkButton(
+            self,
+            text="Guardar gesto",
+            font=loader.get_fonts()["bold"],
+            command=self.save_new_config,
+        )
         self.save_button.grid(row=2, column=0, sticky="w")
 
 
