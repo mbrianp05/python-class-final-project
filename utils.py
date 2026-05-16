@@ -110,6 +110,7 @@ def turn_dict_into_gesture(data: Dict[Any, Any]) -> Gesture:
         name=data["name"],
         settings=settings,
         effect=Action(data["effect"]),
+        param=data["param"],
     )
 
     return gesture
