@@ -185,6 +185,7 @@ class SettingsForm(ctk.CTkFrame):
 
         self.gestures = fetch_gestures()
 
+        # ESTO DEBERIA SER AUTOMATICO
         self.current_gesture: Gesture | None = copy.deepcopy(
             self.gestures[0] if len(self.gestures) > 0 else None
         )
@@ -213,11 +214,27 @@ class SettingsForm(ctk.CTkFrame):
         self.name_field.grid(row=0, column=1, padx=30)
         self.name_field.bind("<KeyRelease>", lambda _: self.update_config())
 
+    # SETEA EL GESTO QUE SE ESTÁ CONFIGURANDO A PARTIR DEL VALOR
+    # SELECCIONADO EN EL COMBOBOX DE LOS GESTOS
+    def set_current_gesture(self):
+        gesture_name = self.gesture_selector.get()
+        f = list(filter(lambda g: g.name == gesture_name, self.gestures))
+
+        if len(f) == 0:
+            self.current_gesture = None
+            return
+
+        self.current_gesture = copy.deepcopy(f[0])
+        self.adjust_current_configuration_display()
+
     def display_current_gesture_selector(self):
-        self.selector = ctk.CTkComboBox(
-            self, values=[g.name for g in self.gestures], width=200
+        self.gesture_selector = ctk.CTkComboBox(
+            self,
+            values=[g.name for g in self.gestures],
+            width=200,
+            command=lambda _: self.set_current_gesture(),
         )
-        self.selector.grid(row=0, column=0)
+        self.gesture_selector.grid(row=0, column=0)
 
     # LEE TODOS LOS WIDGETS DEL FORMULARIO Y CAMBIA EL GESTURE DATA
     # DE ACUERDO A LA NUEVA CONFIGURACION
@@ -305,6 +322,10 @@ class SettingsForm(ctk.CTkFrame):
 
         hands_fingers = self.current_gesture.settings.visibleFingers
 
+        # ADJUST GESTURE NAME
+        self.name_field.delete("0.0", "end")
+        self.name_field.insert("0.0", self.current_gesture.name)
+
         # ADJUST HANDS NUMBER
         is_left_active, is_right_active = self.current_gesture.settings.hands
 
@@ -327,13 +348,15 @@ class SettingsForm(ctk.CTkFrame):
             for idx, is_active in enumerate((is_left_active, is_right_active)):
                 if hand_index == idx:
                     if not is_active:
-                        ch.configure(state=ctk.DISABLED)
                         ch.deselect()
+                        ch.configure(state=ctk.DISABLED)
                     else:
                         ch.configure(state=ctk.NORMAL)
 
             if hand_fingers.count(getattr(ch, "stands_for")) == 1:
                 ch.select()
+            else:
+                ch.deselect()
 
     def display_visible_fingers_selector(self):
         fingers_names = ["Pulgar", "Índice", "Medio", "Anular", "Meñique"]
@@ -366,9 +389,38 @@ class SettingsForm(ctk.CTkFrame):
                 # GUARDAR QUE DEDO REPRESENTA EL CHECKBOX
                 setattr(checkbox, "stands_for", fingers_repr[idx])
 
+    def index_of_local_gesture(self, id) -> int:
+        if self.current_gesture is None:
+            return -1
+
+        idx = -1
+
+        for i, g in enumerate(self.gestures):
+            if g.id == self.current_gesture.id:
+                idx = i
+
+        return idx
+
+    def update_local_gesture(self):
+        if self.current_gesture is None:
+            return
+
+        idx = self.index_of_local_gesture(self.current_gesture.id)
+
+        if idx == -1:
+            return
+
+        self.gestures[idx] = self.current_gesture
+
     def save_new_config(self):
         if self.current_gesture is not None:
             update_gesture(self.current_gesture)
+            # GUARDAR LA REFERENCIA DEL NUEVO GESTO EN LA LISTA DE GESTOS
+            # SE PODIA TAMBEIEN HACER EL fetch_gestures PERO ESO LEE EL JSON
+            # POR LO QUE ES MAS CARO A NIVEL DE RENDIMIENTO
+            self.update_local_gesture()
+
+        # AQUI LA LOGICA PARA CREAR UN NUEVO GESTO
 
         self.feedback()
 
