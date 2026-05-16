@@ -8,18 +8,21 @@
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
       "profile": [null, null]
     },
-    "param": null
+    "param": "D:\\"
   },
   {
     "id": 2,
-    "name": "Abrir editor",
+    "name": "Abrir Editor",
     "effect": "open_file",
     "settings": {
       "hands": [true, true],
-      "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
+      "visibleFingers": [
+        ["thumb", "index_finger", "little_finger"],
+        ["middle_finger"]
+      ],
       "profile": [null, null]
     },
-    "param": null
+    "param": "C:\\Users\\user\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Visual Studio Code\\Visual Studio Code"
   },
   {
     "id": 3,
@@ -30,7 +33,7 @@
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
       "profile": [null, null]
     },
-    "param": null
+    "param": 0.2
   },
   {
     "id": 4,
@@ -38,10 +41,10 @@
     "effect": "set_volume",
     "settings": {
       "hands": [true, true],
-      "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
+      "visibleFingers": [["thumb", "index_finger"], []],
       "profile": [null, null]
     },
-    "param": null
+    "param": -0.2
   },
   {
     "id": 5,
@@ -52,7 +55,7 @@
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
       "profile": [null, null]
     },
-    "param": null
+    "param": true
   },
   {
     "id": 6,
@@ -60,10 +63,13 @@
     "effect": "set_wifi_state",
     "settings": {
       "hands": [true, true],
-      "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
+      "visibleFingers": [
+        ["thumb", "index_finger", "little_finger"],
+        ["little_finger", "ring_finger", "middle_finger"]
+      ],
       "profile": [null, null]
     },
-    "param": null
+    "param": false
   },
   {
     "id": 7,
@@ -74,7 +80,7 @@
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
       "profile": [null, null]
     },
-    "param": null
+    "param": "D:\\Songs\\Metallica - Black Album\\08 - Nothing Else Matters.mp3"
   },
   {
     "id": 8,
@@ -89,13 +95,13 @@
   },
   {
     "id": 9,
-    "name": "Abrir navegador",
-    "effect": "open_file",
+    "name": "Git bash",
+    "effect": "run_program",
     "settings": {
       "hands": [true, true],
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
       "profile": ["palm", null]
     },
-    "param": null
+    "param": "C:\\Program Files\\Git\\git-cmd.exe"
   }
 ]
