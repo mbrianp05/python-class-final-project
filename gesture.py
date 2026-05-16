@@ -26,8 +26,9 @@ class GestureData:
 # Cuando el usuario configura un gesto como por ejemplo
 # abrir carpeta debe pasar indicar el path de la carpeta como un string
 # por ende se crea una instancia de Gesture[str] con "param" con el valor del "path"
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class Gesture[T: str | float | int]:
+    id: int
     name: str
     effect: Action
     settings: GestureData
