@@ -1,85 +1,94 @@
 [
   {
-    "name": "Disco D:/",
+    "id": 1,
+    "name": "Abrir D:\\",
     "effect": "open_folder",
     "settings": {
       "hands": [true, true],
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
-      "profile": null
+      "profile": [null, null]
     },
-    "param": "D:\\Apps"
+    "param": null
   },
   {
+    "id": 2,
     "name": "Abrir editor",
     "effect": "open_file",
     "settings": {
       "hands": [true, true],
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
-      "profile": null
+      "profile": [null, null]
     },
-    "param": "C:\\Users\\user\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Visual Studio Code\\Visual Studio Code"
+    "param": null
   },
   {
+    "id": 3,
     "name": "Subir volumen",
     "effect": "set_volume",
     "settings": {
       "hands": [true, true],
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
-      "profile": null
+      "profile": [null, null]
     },
-    "param": 0.2
+    "param": null
   },
   {
+    "id": 4,
     "name": "Bajar volumen",
     "effect": "set_volume",
     "settings": {
       "hands": [true, true],
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
-      "profile": null
+      "profile": [null, null]
     },
-    "param": -0.2
+    "param": null
   },
   {
+    "id": 5,
     "name": "Encender wifi",
     "effect": "set_wifi_state",
     "settings": {
       "hands": [true, true],
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
-      "profile": null
+      "profile": [null, null]
     },
-    "param": true
+    "param": null
   },
   {
+    "id": 6,
     "name": "Apagar wifi",
     "effect": "set_wifi_state",
     "settings": {
       "hands": [true, true],
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
-      "profile": null
+      "profile": [null, null]
     },
-    "param": false
+    "param": null
   },
   {
+    "id": 7,
     "name": "Reproducir canci\u00f3n",
     "effect": "open_file",
     "settings": {
       "hands": [true, true],
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
-      "profile": null
+      "profile": [null, null]
     },
-    "param": "D:\\Songs\\Metallica - Black Album\\08 - Nothing Else Matters.mp3"
+    "param": null
   },
   {
+    "id": 8,
     "name": "Captura de pantalla",
     "effect": "take_screenshot",
     "settings": {
       "hands": [true, true],
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
-      "profile": null
+      "profile": [null, null]
     },
     "param": null
   },
   {
+    "id": 9,
     "name": "Abrir navegador",
     "effect": "open_file",
     "settings": {
@@ -87,6 +96,6 @@
       "visibleFingers": [["thumb", "index_finger", "little_finger"], []],
       "profile": ["palm", null]
     },
-    "param": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Google Chrome"
+    "param": null
   }
 ]

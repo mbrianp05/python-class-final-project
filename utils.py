@@ -106,7 +106,10 @@ def turn_dict_into_gesture(data: Dict[Any, Any]) -> Gesture:
     settings = GestureData(hands=hands, visibleFingers=fingers, profile=profile)
 
     gesture = Gesture(
-        name=data["name"], settings=settings, effect=Action(data["effect"])
+        id=data["id"],
+        name=data["name"],
+        settings=settings,
+        effect=Action(data["effect"]),
     )
 
     return gesture
@@ -125,6 +128,7 @@ def turn_gesture_into_dict(gesture: Gesture) -> Dict[Any, Any]:
         profile = None
 
     return {
+        "id": gesture.id,
         "name": gesture.name,
         "effect": gesture.effect.value,
         "settings": {
