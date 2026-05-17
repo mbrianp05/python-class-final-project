@@ -307,10 +307,20 @@ class SettingsForm(ctk.CTkFrame):
         return [get_repr_for_hand_profile(p) for p in profiles]
 
     def display_active_hands_selector(self):
-        self.left_hand_icon = ctk.CTkLabel(self.form_panel, text="Mano izquierda")
+        icons = loader.get_icons(scale=340)
+
+        self.left_hand_icon = ctk.CTkLabel(
+            self.form_panel,
+            text="",
+            image=icons["hand-1"],  # type: ignore
+        )
         self.left_hand_icon.grid(row=0, column=0, sticky="w")
 
-        self.right_hand_icon = ctk.CTkLabel(self.form_panel, text="Mano derecha")
+        self.right_hand_icon = ctk.CTkLabel(
+            self.form_panel,
+            text="",
+            image=icons["hand-2"],  # type: ignore
+        )
         self.right_hand_icon.grid(row=0, column=1, sticky="w")
 
         self.active_left_hand = ctk.CTkCheckBox(

@@ -28,4 +28,6 @@ def get_icons(scale: int = 25):
         "arrow_left_darker": tksvg.SvgImage(
             file="./icons/arrow-left-darker.svg", scaletoheight=scale
         ),
+        "hand-1": tksvg.SvgImage(file="./icons/hand-1.svg", scaletoheight=scale),
+        "hand-2": tksvg.SvgImage(file="./icons/hand-2.svg", scaletoheight=scale),
     }
