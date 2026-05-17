@@ -141,6 +141,24 @@ def turn_gesture_into_dict(gesture: Gesture) -> Dict[Any, Any]:
     }
 
 
+def get_repr_for_hand_profile(profile: HandProfile | None) -> str:
+    dict = {
+        HandProfile.PALM: "Palma de la mano",
+        HandProfile.FRONT: "Parte frontal",
+        None: "Ninguna",
+    }
+    return dict[profile]
+
+
+def get_hand_profile_from_repr(repr: str) -> HandProfile | None:
+    dict = {
+        "Palma de la mano": HandProfile.PALM,
+        "Parte frontal": HandProfile.FRONT,
+        "Ninguna": None,
+    }
+    return dict[repr]
+
+
 def clamp(min, value, max):
     if value < min:
         return min

@@ -9,11 +9,15 @@ from customtkinter import CTkFrame
 from PIL import Image
 
 import loader
-from gesture import Gesture, GestureRecognition
+from gesture import Gesture, GestureRecognition, HandProfile
 from services import fetch_gestures, update_gesture
 from uiclasses import HighlightTransition, MouseEventsImagesPack, View
 from utilityclasses import Finger
-from utils import shorten_gesture_name
+from utils import (
+    get_hand_profile_from_repr,
+    get_repr_for_hand_profile,
+    shorten_gesture_name,
+)
 
 
 class Sidebar(CTkFrame):
@@ -233,7 +237,12 @@ class SettingsForm(ctk.CTkFrame):
             values=[g.name for g in self.gestures],
             width=200,
             command=lambda _: self.set_current_gesture(),
+            state="readonly",
         )
+
+        if self.current_gesture is not None:
+            self.gesture_selector.set(self.current_gesture.name)
+
         self.gesture_selector.grid(row=0, column=0)
 
     # LEE TODOS LOS WIDGETS DEL FORMULARIO Y CAMBIA EL GESTURE DATA
@@ -250,6 +259,16 @@ class SettingsForm(ctk.CTkFrame):
         is_right_hand_active = bool(self.active_right_hand.get())
 
         settings.hands = (is_left_hand_active, is_right_hand_active)
+
+        # ACTUALIZAR EL PROFILE
+        left_hand_profile = get_hand_profile_from_repr(
+            self.left_hand_profile_selector.get()
+        )
+        right_hand_profile = get_hand_profile_from_repr(
+            self.right_hand_profile_selector.get()
+        )
+
+        settings.profile = (left_hand_profile, right_hand_profile)
 
         # ACTUALIZAR LOS DEDOS VISIBLES MARCADOS
         all_checkboxes = self.get_fingers_selector_checkboxes()
@@ -278,6 +297,15 @@ class SettingsForm(ctk.CTkFrame):
 
         self.adjust_current_configuration_display()
 
+    def get_hand_profile_values(self):
+        profiles = [
+            None,
+            HandProfile.PALM,
+            HandProfile.FRONT,
+        ]
+
+        return [get_repr_for_hand_profile(p) for p in profiles]
+
     def display_active_hands_selector(self):
         self.left_hand_icon = ctk.CTkLabel(self.form_panel, text="Mano izquierda")
         self.left_hand_icon.grid(row=0, column=0, sticky="w")
@@ -296,6 +324,32 @@ class SettingsForm(ctk.CTkFrame):
             self.form_panel, text="", command=self.update_config
         )
         self.active_right_hand.grid(row=1, column=1)
+
+        # HANDS PROFILE CONFIGURATION
+        self.profile_label = ctk.CTkLabel(
+            self.form_panel, text="Perfil de las manos", fg_color="transparent"
+        )
+        self.profile_label.grid(row=2, column=0)
+
+        values = self.get_hand_profile_values()
+
+        self.left_hand_profile_selector = ctk.CTkComboBox(
+            self.form_panel,
+            state="readonly",
+            values=values,
+            command=lambda _: self.update_config(),
+        )
+        self.left_hand_profile_selector.set(values[0])
+        self.left_hand_profile_selector.grid(row=3, column=0)
+
+        self.right_hand_profile_selector = ctk.CTkComboBox(
+            self.form_panel,
+            state="readonly",
+            values=values,
+            command=lambda _: self.update_config(),
+        )
+        self.right_hand_profile_selector.set(values[0])
+        self.right_hand_profile_selector.grid(row=3, column=1)
 
     def no_settings_status(self):
         self.active_left_hand.deselect()
@@ -326,14 +380,31 @@ class SettingsForm(ctk.CTkFrame):
         self.name_field.delete("0.0", "end")
         self.name_field.insert("0.0", self.current_gesture.name)
 
-        # ADJUST HANDS NUMBER
+        # ADJUST HANDS NUMBER AND HAND PROFILE
         is_left_active, is_right_active = self.current_gesture.settings.hands
+        (setted_profile_left, setted_profile_right) = (
+            self.current_gesture.settings.profile
+        )
 
         if is_left_active:
             self.active_left_hand.select()
+            self.left_hand_profile_selector.configure(state="readonly")
+            self.left_hand_profile_selector.set(
+                get_repr_for_hand_profile(setted_profile_left)
+            )
+        else:
+            self.left_hand_profile_selector.set(self.get_hand_profile_values()[0])
+            self.left_hand_profile_selector.configure(state=ctk.DISABLED)
 
         if is_right_active:
             self.active_right_hand.select()
+            self.right_hand_profile_selector.configure(state="readonly")
+            self.right_hand_profile_selector.set(
+                get_repr_for_hand_profile(setted_profile_right)
+            )
+        else:
+            self.right_hand_profile_selector.set(self.get_hand_profile_values()[0])
+            self.right_hand_profile_selector.configure(state=ctk.DISABLED)
 
         all_checkboxes = self.get_fingers_selector_checkboxes()
 
@@ -371,7 +442,7 @@ class SettingsForm(ctk.CTkFrame):
         self.checkbox_collection_panel = ctk.CTkFrame(
             self.form_panel, fg_color="transparent"
         )
-        self.checkbox_collection_panel.grid(row=2, column=0, pady=40, sticky="we")
+        self.checkbox_collection_panel.grid(row=4, column=0, pady=40, sticky="we")
         self.columnconfigure((0, 1), weight=1)
 
         self.left_hand_fingers_selector = []
@@ -389,7 +460,7 @@ class SettingsForm(ctk.CTkFrame):
                 # GUARDAR QUE DEDO REPRESENTA EL CHECKBOX
                 setattr(checkbox, "stands_for", fingers_repr[idx])
 
-    def index_of_local_gesture(self, id) -> int:
+    def index_of_local_gesture(self) -> int:
         if self.current_gesture is None:
             return -1
 
@@ -405,7 +476,7 @@ class SettingsForm(ctk.CTkFrame):
         if self.current_gesture is None:
             return
 
-        idx = self.index_of_local_gesture(self.current_gesture.id)
+        idx = self.index_of_local_gesture()
 
         if idx == -1:
             return
