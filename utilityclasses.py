@@ -3,6 +3,15 @@ from enum import StrEnum
 # AQUI IRAN TODAS LAS CLASES RELACIONADAS CON LA LOGICA
 
 
+class Action(StrEnum):
+    SET_VOLUME = "set_volume"
+    SET_WIFI_STATE = "set_wifi_state"
+    TAKE_SCREENSHOT = "take_screenshot"
+    OPEN_FILE = "open_file"
+    OPEN_FOLDER = "open_folder"
+    RUN_RROGRAM = "run_program"
+
+
 class Finger(StrEnum):
     THUMB_FINGER = "thumb"
     INDEX_FINGER = "index_finger"

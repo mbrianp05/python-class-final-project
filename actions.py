@@ -10,7 +10,6 @@
 
 import asyncio
 import subprocess
-from enum import StrEnum
 
 from PIL import ImageGrab
 from pycaw.pycaw import AudioUtilities
@@ -35,16 +34,12 @@ def open_file_with_default_app(filepath: str) -> None:
 
 
 def set_volume(delta_level: float) -> None:
-    delta_level = utils.clamp(0.0, delta_level, 0.0)
-
     device = AudioUtilities.GetSpeakers()
 
     if device is not None:
         volume = device.EndpointVolume
-        new_level = max(
-            0.0, min(1.0, volume.GetMasterVolumeLevelScalar() + delta_level)
-        )
-        volume.SetMasterVolumeLevelScalar(new_level, None)
+        level = utils.clamp(0.0, volume.GetMasterVolumeLevelScalar() + delta_level, 1.0)
+        volume.SetMasterVolumeLevelScalar(level, None)
 
 
 def set_wifi_state(enable: bool) -> None:
@@ -68,12 +63,3 @@ def take_screenshot() -> None:
 
     if path_plus_name:
         screenshot.save(path_plus_name)
-
-
-class Action(StrEnum):
-    SET_VOLUME = "set_volume"
-    SET_WIFI_STATE = "set_wifi_state"
-    TAKE_SCREENSHOT = "take_screenshot"
-    OPEN_FILE = "open_file"
-    OPEN_FOLDER = "open_folder"
-    RUN_RROGRAM = "run_program"

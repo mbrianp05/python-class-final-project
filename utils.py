@@ -5,9 +5,8 @@ from datetime import datetime
 from tkinter import filedialog
 from typing import Any, Dict
 
-from actions import Action
 from gesture import Gesture, GestureData, HandProfile
-from utilityclasses import Finger
+from utilityclasses import Action, Finger
 
 ALLOWED_OS_PREFIXES = ("win",)
 
