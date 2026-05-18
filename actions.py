@@ -10,12 +10,25 @@
 
 import asyncio
 import subprocess
+from typing import Dict
 
 from PIL import ImageGrab
 from pycaw.pycaw import AudioUtilities
 from winrt.windows.devices.radios import Radio, RadioKind, RadioState
 
 import utils
+from utilityclasses import Action, ParamType
+
+
+def get_actions_parameter_type() -> Dict[Action, ParamType | None]:
+    return {
+        Action.TAKE_SCREENSHOT: None,
+        Action.OPEN_FILE: ParamType.FILE_PATH,
+        Action.OPEN_FOLDER: ParamType.FOLDER_PATH,
+        Action.SET_VOLUME: ParamType.NUMERIC,
+        Action.SET_WIFI_STATE: ParamType.BINARY,
+        Action.RUN_PROGRAM: ParamType.FILE_PATH,
+    }
 
 
 # abrir el explorador en esa carpeta

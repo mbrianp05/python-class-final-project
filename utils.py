@@ -23,6 +23,13 @@ def shorten_gesture_name(name: str) -> str:
     return name[: name_max_len - 3] + "..." if len(name) > name_max_len else name
 
 
+def get_or_default(sequence, index, default=None):
+    try:
+        return sequence[index]
+    except (ValueError, IndexError):
+        return default
+
+
 # Verificar que el path exista
 # y que no sea un programa sino una carpeta
 def is_valid_path(path: str) -> bool:
@@ -140,21 +147,38 @@ def turn_gesture_into_dict(gesture: Gesture) -> Dict[Any, Any]:
     }
 
 
+action_repr_dic = {
+    Action.SET_VOLUME: "Ajustar el volumen",
+    Action.SET_WIFI_STATE: "Cambiar el estado del Wi-Fi",
+    Action.TAKE_SCREENSHOT: "Tomar captura de pantalla",
+    Action.OPEN_FILE: "Abrir un archivo con el programa por defecto",
+    Action.OPEN_FOLDER: "Abrir una carpeta en el explorador de archivos",
+    Action.RUN_PROGRAM: "Correr un programa",
+}
+
+
+def get_repr_for_action(action: Action) -> str:
+    return action_repr_dic[action]
+
+
+def get_action_from_repr(repr: str) -> Action:
+    dict = {value: key for key, value in action_repr_dic.items()}
+    return dict[repr]
+
+
+hand_profile_repr_dic = {
+    HandProfile.PALM: "Palma de la mano",
+    HandProfile.FRONT: "Parte frontal",
+    None: "Ninguna",
+}
+
+
 def get_repr_for_hand_profile(profile: HandProfile | None) -> str:
-    dict = {
-        HandProfile.PALM: "Palma de la mano",
-        HandProfile.FRONT: "Parte frontal",
-        None: "Ninguna",
-    }
-    return dict[profile]
+    return hand_profile_repr_dic[profile]
 
 
 def get_hand_profile_from_repr(repr: str) -> HandProfile | None:
-    dict = {
-        "Palma de la mano": HandProfile.PALM,
-        "Parte frontal": HandProfile.FRONT,
-        "Ninguna": None,
-    }
+    dict = {value: key for key, value in hand_profile_repr_dic.items()}
     return dict[repr]
 
 

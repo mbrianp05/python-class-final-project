@@ -6,10 +6,17 @@ def load_fonts_files():
     ctk.FontManager.load_font("fonts/InterVariable.ttf")
 
 
-def get_fonts():
+def get_fonts(size=None):
     return {
-        "title": ctk.CTkFont(family="Inter Variable", size=25),
-        "bold": ctk.CTkFont(family="Inter Variable", size=15, weight="bold"),
+        "title": ctk.CTkFont(
+            family="Inter Variable", size=25 if size is None else size
+        ),
+        "bold": ctk.CTkFont(
+            family="Inter Variable", size=15 if size is None else size, weight="bold"
+        ),
+        "regular": ctk.CTkFont(
+            family="Inter Variable", size=15 if size is None else size, weight="normal"
+        ),
     }
 
 
@@ -30,4 +37,10 @@ def get_icons(scale: int = 25):
         ),
         "hand-1": tksvg.SvgImage(file="./icons/hand-1.svg", scaletoheight=scale),
         "hand-2": tksvg.SvgImage(file="./icons/hand-2.svg", scaletoheight=scale),
+        "hand-1-darker": tksvg.SvgImage(
+            file="./icons/hand-1-darker.svg", scaletoheight=scale
+        ),
+        "hand-2-darker": tksvg.SvgImage(
+            file="./icons/hand-2-darker.svg", scaletoheight=scale
+        ),
     }

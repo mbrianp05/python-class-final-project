@@ -9,7 +9,14 @@ class Action(StrEnum):
     TAKE_SCREENSHOT = "take_screenshot"
     OPEN_FILE = "open_file"
     OPEN_FOLDER = "open_folder"
-    RUN_RROGRAM = "run_program"
+    RUN_PROGRAM = "run_program"
+
+
+class ParamType(StrEnum):
+    NUMERIC = "numeric"
+    BINARY = "binary"
+    FILE_PATH = "file_path"
+    FOLDER_PATH = "folder_path"
 
 
 class Finger(StrEnum):

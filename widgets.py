@@ -1,6 +1,6 @@
 import copy
 import time
-from typing import Any, Callable, List, cast
+from typing import Any, Callable, List, Literal, cast
 
 import customtkinter as ctk
 import cv2
@@ -9,12 +9,15 @@ from customtkinter import CTkFrame
 from PIL import Image
 
 import loader
+from actions import get_actions_parameter_type
 from gesture import Gesture, GestureRecognition, HandProfile
 from services import fetch_gestures, update_gesture
 from uiclasses import HighlightTransition, MouseEventsImagesPack, View
-from utilityclasses import Finger
+from utilityclasses import Action, Finger, ParamType
 from utils import (
+    get_action_from_repr,
     get_hand_profile_from_repr,
+    get_repr_for_action,
     get_repr_for_hand_profile,
     shorten_gesture_name,
 )
@@ -64,7 +67,7 @@ class Sidebar(CTkFrame):
             mouseEnter=icons["gear_darker"],
         )
 
-        self.configure_gestures_label = IconButton(
+        self.configure_gestures_label = CustomButton(
             self.header,
             images_pack=images_pack,
             command=lambda: self.controller.show(View.SETTINGS_VIEW),
@@ -173,7 +176,7 @@ class SettingsHeader(ctk.CTkFrame):
         pack = MouseEventsImagesPack(
             noEvent=icons["arrow_left"], mouseEnter=icons["arrow_left_darker"]
         )
-        self.nav_button = IconButton(
+        self.nav_button = CustomButton(
             self,
             images_pack=pack,
             command=lambda: self.controller.show(View.DETECTION_VIEW),  # type: ignore
@@ -181,12 +184,92 @@ class SettingsHeader(ctk.CTkFrame):
         self.nav_button.grid(row=0, column=0, padx=10, pady=10)
 
 
+class ParamPicker(ctk.CTkFrame):
+    def __init__(self, master, paramtype: ParamType = ParamType.NUMERIC):
+        super().__init__(master)
+        self.paramtype = paramtype
+        self._value = None
+        self.font = loader.get_fonts()["regular"]
+
+        self.frames = []
+
+        self.set_layout()
+        self.display_browse_files()
+        self.display_numeric_param()
+        self.display_binary_param()
+
+        for frame in self.frames:
+            frame.configure(height=100, width=400)
+            frame.pack(fill="both", expand=True)
+
+        self.show_current_frame()
+
+    def get_value(self):
+        return self._value
+
+    def set_param_type(self, paramtype: ParamType | None):
+        self.paramtype = paramtype
+        self.show_current_frame()
+
+    def show_current_frame(self):
+        current_frame = None
+
+        for frame in self.frames:
+            frame.pack_forget()
+
+            if getattr(frame, "stands_for", None) == self.paramtype:
+                current_frame = frame
+
+        if self.paramtype is None:
+            self._value = None
+            return
+
+        if current_frame is None:
+            return
+
+        current_frame.pack(fill="both", expand=True)
+
+    def set_layout(self):
+        pass
+
+    def display_binary_param(self):
+        frame = ctk.CTkFrame(self, fg_color="transparent")
+        frame.columnconfigure((0, 1), weight=1)
+        setattr(frame, "stands_for", ParamType.BINARY)
+
+        self.frames.append(frame)
+
+        self.enable = ctk.CTkRadioButton(frame, text="Activar", font=self.font)
+        self.enable.grid(row=0, column=0)
+        self.disable = ctk.CTkRadioButton(frame, text="Desactivar", font=self.font)
+        self.disable.grid(row=0, column=1)
+
+    def display_numeric_param(self):
+        frame = ctk.CTkFrame(self, fg_color="transparent")
+        setattr(frame, "stands_for", ParamType.NUMERIC)
+
+        self.frames.append(frame)
+
+        self.numeric_entry = ctk.CTkEntry(frame, width=160, font=self.font, height=32)
+        self.numeric_entry.grid(row=0, column=0)
+
+    def display_browse_files(self):
+        frame = ctk.CTkFrame(self, fg_color="transparent")
+        setattr(frame, "stands_for", ParamType.FILE_PATH)
+
+        self.frames.append(frame)
+
+        self.browser_button = ctk.CTkButton(
+            frame, text="Buscar archivo", font=self.font, height=32
+        )
+        self.browser_button.grid(row=0, column=0)
+
+
 class SettingsForm(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
 
         self.configure(fg_color="transparent")
-
         self.gestures = fetch_gestures()
 
         # ESTO DEBERIA SER AUTOMATICO
@@ -194,8 +277,14 @@ class SettingsForm(ctk.CTkFrame):
             self.gestures[0] if len(self.gestures) > 0 else None
         )
 
-        self.form_panel = ctk.CTkFrame(self)
-        self.form_panel.grid(row=1, column=0, pady=50)
+        self.set_layout()
+
+        self.form_header_panel = ctk.CTkFrame(self, fg_color="transparent")
+        self.form_header_panel.grid(row=0, column=0, sticky="w")
+
+        self.form_panel = ctk.CTkFrame(self, fg_color="transparent")
+        self.form_panel.columnconfigure((0, 1), weight=1, pad=100)
+        self.form_panel.grid(row=1, column=0, pady=(40, 0), columnspan=2)
 
         self.display_current_gesture_selector()
         self.display_name_field()
@@ -206,15 +295,45 @@ class SettingsForm(ctk.CTkFrame):
 
         self.adjust_current_configuration_display()
 
+    def set_layout(self):
+        self.columnconfigure((0, 1), weight=1)
+
     def display_action_selector(self):
-        pass
+        values = self.get_action_values()
+
+        self.action_panel = ctk.CTkFrame(self, fg_color="transparent")
+        self.action_panel.grid(row=0, column=1)
+
+        self.action_selector = ctk.CTkComboBox(
+            self.action_panel,
+            values=values,
+            width=360,
+            height=32,
+            state="readonly",
+            font=loader.get_fonts()["regular"],
+            command=lambda _: self.change_param_type_form(),
+        )
+        self.action_selector.set(values[0])
+        self.action_selector.grid(row=0, column=0)
+
+        self.param_picker = ParamPicker(self.action_panel)
+        self.param_picker.grid(row=0, column=1, padx=(10, 0))
+
+    def change_param_type_form(self):
+        required_param_type = get_actions_parameter_type()[self.get_selected_action()]
+        self.param_picker.set_param_type(required_param_type)
 
     def display_name_field(self):
         # APLICAR MAX LENGTH !!!!
 
         text = "" if self.current_gesture is None else self.current_gesture.name
-        self.name_field = ctk.CTkTextbox(self, width=200, height=28, wrap="none")
-        self.name_field.insert("0.0", text)
+        self.name_field = ctk.CTkEntry(
+            self.form_header_panel,
+            width=200,
+            height=31,
+            font=loader.get_fonts()["regular"],
+        )
+        self.name_field.insert(0, text)
         self.name_field.grid(row=0, column=1, padx=30)
         self.name_field.bind("<KeyRelease>", lambda _: self.update_config())
 
@@ -233,17 +352,22 @@ class SettingsForm(ctk.CTkFrame):
 
     def display_current_gesture_selector(self):
         self.gesture_selector = ctk.CTkComboBox(
-            self,
+            self.form_header_panel,
             values=[g.name for g in self.gestures],
             width=200,
             command=lambda _: self.set_current_gesture(),
             state="readonly",
+            font=loader.get_fonts()["regular"],
         )
 
         if self.current_gesture is not None:
             self.gesture_selector.set(self.current_gesture.name)
 
         self.gesture_selector.grid(row=0, column=0)
+
+    def get_selected_action(self) -> Action:
+        selected_action = self.action_selector.get()
+        return get_action_from_repr(selected_action)
 
     # LEE TODOS LOS WIDGETS DEL FORMULARIO Y CAMBIA EL GESTURE DATA
     # DE ACUERDO A LA NUEVA CONFIGURACION
@@ -252,11 +376,11 @@ class SettingsForm(ctk.CTkFrame):
             return
 
         settings = self.current_gesture.settings
-        self.current_gesture.name = self.name_field.get("0.0", "end").strip(" \n\r")
+        self.current_gesture.name = self.name_field.get().strip(" \n\r")
 
         # ACTUALIZAR LAS MANOS
-        is_left_hand_active = bool(self.active_left_hand.get())
-        is_right_hand_active = bool(self.active_right_hand.get())
+        is_left_hand_active = bool(self.left_hand_activator.get())
+        is_right_hand_active = bool(self.right_hand_activator.get())
 
         settings.hands = (is_left_hand_active, is_right_hand_active)
 
@@ -295,6 +419,9 @@ class SettingsForm(ctk.CTkFrame):
         if not is_right_hand_active:
             settings.visibleFingers = (left_hand_visible_fingers, [])
 
+        #  ACTUALIZAR EL ACTION
+        self.current_gesture.effect = self.get_selected_action()
+
         self.adjust_current_configuration_display()
 
     def get_hand_profile_values(self):
@@ -306,64 +433,86 @@ class SettingsForm(ctk.CTkFrame):
 
         return [get_repr_for_hand_profile(p) for p in profiles]
 
+    def get_action_values(self):
+        actions = [
+            Action.OPEN_FILE,
+            Action.OPEN_FOLDER,
+            Action.TAKE_SCREENSHOT,
+            Action.RUN_PROGRAM,
+            Action.SET_VOLUME,
+            Action.SET_WIFI_STATE,
+        ]
+
+        return [get_repr_for_action(p) for p in actions]
+
     def display_active_hands_selector(self):
         icons = loader.get_icons(scale=340)
+        left_images_pack = MouseEventsImagesPack(
+            noEvent=icons["hand-1"], mouseEnter=icons["hand-1-darker"]
+        )
+        right_images_pack = MouseEventsImagesPack(
+            noEvent=icons["hand-2"], mouseEnter=icons["hand-2-darker"]
+        )
 
-        self.left_hand_icon = ctk.CTkLabel(
-            self.form_panel,
-            text="",
-            image=icons["hand-1"],  # type: ignore
+        self.left_hand_icon = ImagesEffectLabel(
+            self.form_panel, text="", images_pack=left_images_pack
         )
         self.left_hand_icon.grid(row=0, column=0, sticky="w")
 
-        self.right_hand_icon = ctk.CTkLabel(
-            self.form_panel,
-            text="",
-            image=icons["hand-2"],  # type: ignore
+        self.right_hand_icon = ImagesEffectLabel(
+            self.form_panel, text="", images_pack=right_images_pack
         )
         self.right_hand_icon.grid(row=0, column=1, sticky="w")
 
-        self.active_left_hand = ctk.CTkCheckBox(
-            self.form_panel,
-            text="",
-            command=self.update_config,
-        )
-        self.active_left_hand.grid(row=1, column=0)
+        checkboxes = []
 
-        self.active_right_hand = ctk.CTkCheckBox(
-            self.form_panel, text="", command=self.update_config
-        )
-        self.active_right_hand.grid(row=1, column=1)
+        for i in range(2):
+            ch = ctk.CTkCheckBox(
+                self.form_panel,
+                text="",
+                command=self.update_config,
+                font=loader.get_fonts()["regular"],
+            )
+            ch.grid(row=1, column=i, pady=10, sticky="we")
+            checkboxes.append(ch)
+
+        (self.left_hand_activator, self.right_hand_activator, *_) = checkboxes
 
         # HANDS PROFILE CONFIGURATION
-        self.profile_label = ctk.CTkLabel(
-            self.form_panel, text="Perfil de las manos", fg_color="transparent"
+        self.profile_label = RegularLabel(
+            self.form_panel, text="PERFIL DE LAS MANOS", size=21, variant="bold"
         )
-        self.profile_label.grid(row=2, column=0)
+        self.profile_label.grid(row=2, column=0, pady=20, columnspan=2)
 
         values = self.get_hand_profile_values()
 
         self.left_hand_profile_selector = ctk.CTkComboBox(
             self.form_panel,
+            width=250,
+            height=31,
             state="readonly",
             values=values,
             command=lambda _: self.update_config(),
+            font=loader.get_fonts()["regular"],
         )
         self.left_hand_profile_selector.set(values[0])
         self.left_hand_profile_selector.grid(row=3, column=0)
 
         self.right_hand_profile_selector = ctk.CTkComboBox(
             self.form_panel,
+            width=250,
+            height=31,
             state="readonly",
             values=values,
             command=lambda _: self.update_config(),
+            font=loader.get_fonts()["regular"],
         )
         self.right_hand_profile_selector.set(values[0])
         self.right_hand_profile_selector.grid(row=3, column=1)
 
     def no_settings_status(self):
-        self.active_left_hand.deselect()
-        self.active_left_hand.deselect()
+        self.left_hand_activator.deselect()
+        self.left_hand_activator.deselect()
 
         for n, ch in self.checkbox_collection_panel.children.items():
             if n.startswith("!ctkcheckbox"):
@@ -387,8 +536,8 @@ class SettingsForm(ctk.CTkFrame):
         hands_fingers = self.current_gesture.settings.visibleFingers
 
         # ADJUST GESTURE NAME
-        self.name_field.delete("0.0", "end")
-        self.name_field.insert("0.0", self.current_gesture.name)
+        self.name_field.delete(0, "end")
+        self.name_field.insert(0, self.current_gesture.name)
 
         # ADJUST HANDS NUMBER AND HAND PROFILE
         is_left_active, is_right_active = self.current_gesture.settings.hands
@@ -396,25 +545,47 @@ class SettingsForm(ctk.CTkFrame):
             self.current_gesture.settings.profile
         )
 
-        if is_left_active:
-            self.active_left_hand.select()
-            self.left_hand_profile_selector.configure(state="readonly")
-            self.left_hand_profile_selector.set(
-                get_repr_for_hand_profile(setted_profile_left)
-            )
-        else:
-            self.left_hand_profile_selector.set(self.get_hand_profile_values()[0])
-            self.left_hand_profile_selector.configure(state=ctk.DISABLED)
+        form_fields = {
+            "hand_activator": (self.left_hand_activator, self.right_hand_activator),
+            "hand_profile_selector": (
+                self.left_hand_profile_selector,
+                self.right_hand_profile_selector,
+            ),
+            "hand_icon": (self.left_hand_icon, self.right_hand_icon),
+            "setted_profile": (setted_profile_left, setted_profile_right),
+        }
 
-        if is_right_active:
-            self.active_right_hand.select()
-            self.right_hand_profile_selector.configure(state="readonly")
-            self.right_hand_profile_selector.set(
-                get_repr_for_hand_profile(setted_profile_right)
+        values = {
+            "activator": {
+                True: "select",
+                False: "deselect",
+            },
+            "profile": {
+                True: [
+                    get_repr_for_hand_profile(setted_profile_left),
+                    get_repr_for_hand_profile(setted_profile_right),
+                ],
+                False: [self.get_hand_profile_values()[0]] * 2,
+            },
+            "image": {
+                True: "noEvent",
+                False: "mouseEnter",
+            },
+            "state": {True: "readonly", False: ctk.DISABLED},
+        }
+
+        for idx, is_active in enumerate([is_left_active, is_right_active]):
+            getattr(
+                form_fields["hand_activator"][idx],
+                values["activator"][is_active],
+            )()
+            form_fields["hand_profile_selector"][idx].set(
+                values["profile"][is_active][idx]
             )
-        else:
-            self.right_hand_profile_selector.set(self.get_hand_profile_values()[0])
-            self.right_hand_profile_selector.configure(state=ctk.DISABLED)
+            form_fields["hand_icon"][idx].activate_image(values["image"][is_active])
+            form_fields["hand_profile_selector"][idx].configure(
+                state=values["state"][is_active]
+            )
 
         all_checkboxes = self.get_fingers_selector_checkboxes()
 
@@ -439,6 +610,9 @@ class SettingsForm(ctk.CTkFrame):
             else:
                 ch.deselect()
 
+        # ADJUST ACTION
+        self.action_selector.set(get_repr_for_action(self.current_gesture.effect))
+
     def display_visible_fingers_selector(self):
         fingers_names = ["Pulgar", "Índice", "Medio", "Anular", "Meñique"]
         fingers_repr = [
@@ -452,8 +626,10 @@ class SettingsForm(ctk.CTkFrame):
         self.checkbox_collection_panel = ctk.CTkFrame(
             self.form_panel, fg_color="transparent"
         )
-        self.checkbox_collection_panel.grid(row=4, column=0, pady=40, sticky="we")
-        self.columnconfigure((0, 1), weight=1)
+        self.checkbox_collection_panel.grid(
+            row=4, column=0, pady=40, sticky="we", columnspan=2
+        )
+        self.checkbox_collection_panel.columnconfigure((0, 1), weight=1)
 
         self.left_hand_fingers_selector = []
         self.right_hand_fingers_slector = []
@@ -464,6 +640,7 @@ class SettingsForm(ctk.CTkFrame):
                     self.checkbox_collection_panel,
                     text=name,
                     command=self.update_config,
+                    font=loader.get_fonts()["regular"],
                 )
                 checkbox.grid(row=idx, column=hand_number, pady=10)
 
@@ -503,6 +680,7 @@ class SettingsForm(ctk.CTkFrame):
 
         # AQUI LA LOGICA PARA CREAR UN NUEVO GESTO
 
+        self.display_current_gesture_selector()
         self.feedback()
 
     # PENDIENTE DE IMPLEMENTACIÓN
@@ -511,12 +689,29 @@ class SettingsForm(ctk.CTkFrame):
 
     def display_save_settings_button(self):
         self.save_button = ctk.CTkButton(
-            self,
-            text="Guardar gesto",
-            font=loader.get_fonts()["bold"],
+            self.form_header_panel,
+            height=31,
+            text="",
+            font=loader.get_fonts()["regular"],
             command=self.save_new_config,
+            fg_color="gold",
         )
-        self.save_button.grid(row=2, column=0, sticky="w")
+        self.save_button.grid(row=0, column=3, sticky="w")
+
+
+class ImagesEffectLabel(ctk.CTkLabel):
+    def __init__(
+        self,
+        master,
+        images_pack: MouseEventsImagesPack,
+        text="",
+    ):
+        super().__init__(master, fg_color="transparent", text_color="white", text=text)
+        self.images_pack = images_pack
+        self.activate_image("noEvent")
+
+    def activate_image(self, image: Literal["noEvent", "mouseEnter", "mouseClick"]):
+        self.configure(image=getattr(self.images_pack, image, None))
 
 
 # El botón normal de Customtkinter tiene un aspecto
@@ -525,21 +720,16 @@ class SettingsForm(ctk.CTkFrame):
 # del raton
 # Como esta configuracion se usara mas veces entonces hice un componente para
 # reutilizarlo
-class CustomButton(ctk.CTkLabel):
+class CustomButton(ImagesEffectLabel):
     def __init__(
         self,
         master,
-        text,
         images_pack: MouseEventsImagesPack,
+        text="",
         command: Callable[[], Any] | None = None,
     ):
-        super().__init__(
-            master,
-            text=text,
-            fg_color="transparent",
-            text_color="white",
-            cursor="hand2",
-        )
+        super().__init__(master, text=text, images_pack=images_pack)
+        self.configure(cursor="hand2")
 
         self.command = command
         self.images_pack = images_pack
@@ -557,21 +747,29 @@ class CustomButton(ctk.CTkLabel):
             self.command()
 
     def on_leave(self, _):
-        self.configure(image=self.images_pack.noEvent)
+        self.activate_image("noEvent")
 
     def on_enter(self, _):
-        self.configure(image=self.images_pack.mouseEnter)
+        self.activate_image("mouseEnter")
 
 
-# Boton con la imagen sin texto
-class IconButton(CustomButton):
+class RegularLabel(ctk.CTkLabel):
     def __init__(
         self,
         master,
-        images_pack: MouseEventsImagesPack,
-        command: Callable[[], Any] | None = None,
+        text,
+        text_color="#DCE4EE",
+        size: int | None = None,
+        variant: Literal["regular", "bold"] = "regular",
     ):
-        super().__init__(master, "", images_pack, command)
+        super().__init__(
+            master,
+            text=text,
+            fg_color="transparent",
+            text_color=text_color,
+            font=loader.get_fonts(size)[variant],
+            compound="center",
+        )
 
 
 # Label con resaltado para lista de gestos
