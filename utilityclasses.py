@@ -1,6 +1,6 @@
-from enum import StrEnum
-
 # AQUI IRAN TODAS LAS CLASES RELACIONADAS CON LA LOGICA
+from dataclasses import dataclass
+from enum import StrEnum
 
 
 class Action(StrEnum):
@@ -25,6 +25,12 @@ class Finger(StrEnum):
     MIDDLE_FINGER = "middle_finger"
     RING_FINGER = "ring_finger"
     LITTLE_FINGER = "little_finger"
+
+
+@dataclass
+class ParamConfigurationState:
+    is_valid: bool = False
+    error_message: str | None = None
 
 
 # Para saber la "orientación" de la mano

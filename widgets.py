@@ -13,7 +13,7 @@ from actions import get_actions_parameter_type
 from gesture import Gesture, GestureRecognition, HandProfile
 from services import fetch_gestures, update_gesture
 from uiclasses import HighlightTransition, MouseEventsImagesPack, View
-from utilityclasses import Action, Finger, ParamType
+from utilityclasses import Action, Finger, ParamConfigurationState, ParamType
 from utils import (
     get_action_from_repr,
     get_hand_profile_from_repr,
@@ -185,16 +185,22 @@ class SettingsHeader(ctk.CTkFrame):
 
 
 class ParamPicker(ctk.CTkFrame):
-    def __init__(self, master, paramtype: ParamType = ParamType.NUMERIC):
+    def __init__(
+        self,
+        master,
+        paramtype: ParamType | None = ParamType.NUMERIC,
+        initial_value=None,
+    ):
         super().__init__(master)
-        self.paramtype = paramtype
         self._value = None
         self.font = loader.get_fonts()["regular"]
 
         self.frames = []
+        self._state: ParamConfigurationState | None = None
 
         self.set_layout()
-        self.display_browse_files()
+        self.display_file_picker()
+        self.display_folder_picker()
         self.display_numeric_param()
         self.display_binary_param()
 
@@ -202,16 +208,25 @@ class ParamPicker(ctk.CTkFrame):
             frame.configure(height=100, width=400)
             frame.pack(fill="both", expand=True)
 
-        self.show_current_frame()
+        self.set_param_type(paramtype, initial_value)
 
     def get_value(self):
         return self._value
 
-    def set_param_type(self, paramtype: ParamType | None):
-        self.paramtype = paramtype
-        self.show_current_frame()
+    def get_state(self) -> ParamConfigurationState | None:
+        if self._value is None and self.paramtype is None:
+            return ParamConfigurationState(
+                error_message="No se ha proporcionado el valor del parámetro"
+            )
 
-    def show_current_frame(self):
+        return self._state
+
+    def set_param_type(self, paramtype: ParamType | None, initial_value=None):
+        self.paramtype = paramtype
+        self._value = initial_value
+        self.show_current_frame(initial_value)
+
+    def show_current_frame(self, initial_value=None):
         current_frame = None
 
         for frame in self.frames:
@@ -229,8 +244,15 @@ class ParamPicker(ctk.CTkFrame):
 
         current_frame.pack(fill="both", expand=True)
 
+        if initial_value is not None:
+            current_frame.adjust_value(initial_value)
+
     def set_layout(self):
         pass
+
+    def change_binary_value(self):
+        self._state = ParamConfigurationState(is_valid=True)
+        self._value = bool(self.binary_value.get())
 
     def display_binary_param(self):
         frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -238,11 +260,32 @@ class ParamPicker(ctk.CTkFrame):
         setattr(frame, "stands_for", ParamType.BINARY)
 
         self.frames.append(frame)
+        self.binary_value = ctk.IntVar(value=1)
 
-        self.enable = ctk.CTkRadioButton(frame, text="Activar", font=self.font)
+        self.enable = ctk.CTkRadioButton(
+            frame,
+            text="Activar",
+            variable=self.binary_value,
+            font=self.font,
+            command=self.change_binary_value,
+            value=1,
+        )
         self.enable.grid(row=0, column=0)
-        self.disable = ctk.CTkRadioButton(frame, text="Desactivar", font=self.font)
+        self.disable = ctk.CTkRadioButton(
+            frame,
+            text="Desactivar",
+            variable=self.binary_value,
+            font=self.font,
+            command=self.change_binary_value,
+            value=0,
+        )
         self.disable.grid(row=0, column=1)
+
+        setattr(frame, "adjust_value", lambda v: self.binary_value.set(v))
+
+    def change_numeric_value(self):
+        self._value = self.numeric_entry.get_value()
+        self._state = self.numeric_entry.get_state()
 
     def display_numeric_param(self):
         frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -250,10 +293,17 @@ class ParamPicker(ctk.CTkFrame):
 
         self.frames.append(frame)
 
-        self.numeric_entry = ctk.CTkEntry(frame, width=160, font=self.font, height=32)
+        self.numeric_entry = NumericInput(frame, font=self.font, min=-1, max=1)
+        self.bind("<Key>", lambda _: self.change_numeric_value())
         self.numeric_entry.grid(row=0, column=0)
 
-    def display_browse_files(self):
+        setattr(frame, "adjust_value", lambda v: self.replace_contents(v))
+
+    def replace_contents(self, new_value):
+        self.numeric_entry.delete(0, "end")
+        self.numeric_entry.insert(0, new_value)
+
+    def display_file_picker(self):
         frame = ctk.CTkFrame(self, fg_color="transparent")
         setattr(frame, "stands_for", ParamType.FILE_PATH)
 
@@ -263,6 +313,23 @@ class ParamPicker(ctk.CTkFrame):
             frame, text="Buscar archivo", font=self.font, height=32
         )
         self.browser_button.grid(row=0, column=0)
+        self._state = ParamConfigurationState(is_valid=True)
+
+        setattr(frame, "adjust_value", lambda _: None)
+
+    def display_folder_picker(self):
+        frame = ctk.CTkFrame(self, fg_color="transparent")
+        setattr(frame, "stands_for", ParamType.FOLDER_PATH)
+
+        self.frames.append(frame)
+
+        self.browser_button = ctk.CTkButton(
+            frame, text="Buscar carpeta", font=self.font, height=32
+        )
+        self.browser_button.grid(row=0, column=0)
+        self._state = ParamConfigurationState(is_valid=True)
+
+        setattr(frame, "adjust_value", lambda v: None)
 
 
 class SettingsForm(ctk.CTkFrame):
@@ -311,21 +378,52 @@ class SettingsForm(ctk.CTkFrame):
             height=32,
             state="readonly",
             font=loader.get_fonts()["regular"],
-            command=lambda _: self.change_param_type_form(),
+            command=lambda _: self.change_action(),
         )
         self.action_selector.set(values[0])
         self.action_selector.grid(row=0, column=0)
 
-        self.param_picker = ParamPicker(self.action_panel)
+        paramtype = self.get_paramtype_for_current_action()
+
+        self.param_picker = ParamPicker(
+            self.action_panel,
+            paramtype=paramtype,
+            initial_value=self.get_current_param_value,
+        )
         self.param_picker.grid(row=0, column=1, padx=(10, 0))
+
+    def change_action(self):
+        if self.current_gesture is None:
+            return
+
+        self.change_param_type_form()
+
+    def get_current_param_value(self) -> float | int | str | bool | None:
+        value = None
+
+        if self.current_gesture is not None:
+            value = self.current_gesture.param
+
+        return value
+
+    def get_paramtype_for_current_action(self) -> ParamType | None:
+        action = get_action_from_repr(self.action_selector.get())
+        return get_actions_parameter_type()[action]
 
     def change_param_type_form(self):
         required_param_type = get_actions_parameter_type()[self.get_selected_action()]
-        self.param_picker.set_param_type(required_param_type)
+        value = None
+
+        if (
+            self.current_gesture is not None
+            and self.current_gesture.effect == self.get_selected_action()
+        ):
+            value = self.get_current_param_value()
+
+        self.param_picker.set_param_type(required_param_type, value)
 
     def display_name_field(self):
         # APLICAR MAX LENGTH !!!!
-
         text = "" if self.current_gesture is None else self.current_gesture.name
         self.name_field = ctk.CTkEntry(
             self.form_header_panel,
@@ -421,6 +519,7 @@ class SettingsForm(ctk.CTkFrame):
 
         #  ACTUALIZAR EL ACTION
         self.current_gesture.effect = self.get_selected_action()
+        # self.current_gesture.param = self.param_picker.get_value()
 
         self.adjust_current_configuration_display()
 
@@ -612,6 +711,7 @@ class SettingsForm(ctk.CTkFrame):
 
         # ADJUST ACTION
         self.action_selector.set(get_repr_for_action(self.current_gesture.effect))
+        self.change_param_type_form()
 
     def display_visible_fingers_selector(self):
         fingers_names = ["Pulgar", "Índice", "Medio", "Anular", "Meñique"]
@@ -770,6 +870,85 @@ class RegularLabel(ctk.CTkLabel):
             font=loader.get_fonts(size)[variant],
             compound="center",
         )
+
+
+class NumericInput(ctk.CTkEntry):
+    def __init__(
+        self,
+        master,
+        min=None,
+        max=None,
+        allow_float=True,
+        allow_negatives=True,
+        width=100,
+        height=31,
+        font=None,
+    ):
+        super().__init__(master, width=width, height=height, font=font)
+        self.min = min
+        self.max = max
+        self.allow_float = allow_float
+        self.allow_negatives = allow_negatives
+
+        if not allow_negatives and min is not None:
+            raise ValueError(
+                "Min value cannot be assigned when negative valus are not allowed"
+            )
+
+        if not self.allow_negatives:
+            min = 0
+
+        self.variable = ctk.StringVar()
+        self.variable.trace_add("write", lambda *_: self.on_entry_change())
+        self.configure(textvariable=self.variable)
+
+    def on_entry_change(self):
+        data = self.variable.get()
+        can_have_decimals = (
+            data.count(".") <= 1 if self.allow_float else data.count(".") == 0
+        )
+
+        if data != "":
+            if not data.isdigit() and not can_have_decimals:
+                self.variable.set(data[:-1])
+
+    def get_value(self):
+        if self.allow_float:
+            return float(self.variable.get())
+
+        return int(self.variable.get())
+
+    def get_state(self) -> ParamConfigurationState:
+        state = ParamConfigurationState()
+        value = self.variable.get()
+
+        k = None
+
+        try:
+            k = float(value)
+        except ValueError:
+            state.error_message = "El valor introducido no es un número"
+
+            return state
+
+        if not self.allow_float:
+            state.error_message = "Solo se permite valores enteros"
+
+            return state
+
+        if self.min is not None and k < self.min:
+            state.error_message = f"El valor introducido debe ser mayor que {self.min}"
+
+            return state
+
+        if self.max is not None and k > self.max:
+            state.error_message = f"El valor introducido debe ser mayor que {self.max}"
+
+            return state
+
+        state.is_valid = True
+
+        return state
 
 
 # Label con resaltado para lista de gestos
