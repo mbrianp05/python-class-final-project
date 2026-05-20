@@ -12,7 +12,7 @@ import loader
 from actions import get_actions_parameter_type
 from gesture import Gesture, GestureRecognition, HandProfile
 from services import fetch_gestures, update_gesture
-from uiclasses import HighlightTransition, MouseEventsImagesPack, View
+from uiclasses import HighlightTransition, MessageType, MouseEventsImagesPack, View
 from utilityclasses import Action, Finger, ParamConfigurationState, ParamType
 from utils import (
     get_action_from_repr,
@@ -304,8 +304,6 @@ class ParamPicker(ctk.CTkFrame):
         setattr(frame, "adjust_value", lambda v: self.replace_contents(v))
 
     def replace_contents(self, new_value: int | None):
-        print(new_value)
-
         self.numeric_entry.delete(0, "end")
         self.numeric_entry.insert(0, new_value if new_value is not None else "")
 
@@ -429,6 +427,15 @@ class SettingsForm(ctk.CTkFrame):
         self.display_save_settings_button()
 
         self.adjust_current_configuration_display()
+
+        self.feedback_label = FloatingFeedbackLabel(self)
+
+        self.after(
+            500,
+            lambda: self.feedback_label.show_variant(
+                MessageType.SUCCESS, "✨ ¡Formulario listo para usar! ✨", 3000
+            ),
+        )
 
     def set_layout(self):
         self.columnconfigure((0, 1), weight=1)
@@ -839,7 +846,6 @@ class SettingsForm(ctk.CTkFrame):
     def save_new_config(self):
         if self.current_gesture is not None:
             self.current_gesture.param = self.param_picker.get_value()
-            print(self.current_gesture.param)
 
             update_gesture(self.current_gesture)
             # GUARDAR LA REFERENCIA DEL NUEVO GESTO EN LA LISTA DE GESTOS
@@ -854,7 +860,9 @@ class SettingsForm(ctk.CTkFrame):
 
     # PENDIENTE DE IMPLEMENTACIÓN
     def feedback(self):
-        print("GESTO ACTUALIZADO CORRECTAMENTE")
+        self.feedback_label.show_variant(
+            MessageType.SUCCESS, "Gesto guardado correctamente"
+        )
 
     def display_save_settings_button(self):
         self.save_button = ctk.CTkButton(
@@ -1031,6 +1039,62 @@ class NumericInput(ctk.CTkEntry):
         state.is_valid = True
 
         return state
+
+
+class FloatingFeedbackLabel(ctk.CTkLabel):
+    def __init__(self, master, **kwargs):
+        # Configuración base del label
+        super().__init__(
+            master,
+            text="",
+            corner_radius=10,
+            padx=20,
+            pady=12,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            **kwargs,
+        )
+
+        self.master = master
+        self._after_id = None
+        self._is_visible = False
+
+        # Configurar colores según el tipo
+        self._variants = {
+            MessageType.ERROR: {
+                "bg": "#E53935",
+                "fg": "#FFFFFF",
+            },
+            MessageType.SUCCESS: {
+                "bg": "#43A047",
+                "fg": "#FFFFFF",
+            },
+            MessageType.INFO: {
+                "bg": "#1E88E5",
+                "fg": "#FFFFFF",
+            },
+        }
+
+        # Configuración de posición (izquierda)
+        self.margin_left = 20  # Margen desde el borde izquierdo
+        self.margin_top = 20  # Margen desde el borde superior
+
+        # Configuración inicial
+        self.configure(
+            fg_color=self._variants[MessageType.INFO]["bg"],
+            text_color=self._variants[MessageType.INFO]["fg"],
+            justify="left",
+        )
+
+    def show_variant(self, message_type: MessageType, text: str, duration: int = 3000):
+        pass
+
+    def hide(self):
+        """Oculta el mensaje flotante"""
+        self._is_visible = False
+        self.place_forget()
+        if self._after_id:
+            self.after_cancel(self._after_id)
+            self._after_id = None
 
 
 # Label con resaltado para lista de gestos

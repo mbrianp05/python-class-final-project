@@ -12,6 +12,12 @@ class View(Enum):
     SETTINGS_VIEW = "settings"
 
 
+class MessageType(Enum):
+    ERROR = "error"
+    SUCCESS = "success"
+    INFO = "info"
+
+
 @dataclass
 class MouseEventsImagesPack:
     noEvent: tksvg.SvgImage
