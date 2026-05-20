@@ -19,8 +19,12 @@ def verify_os() -> None:
 name_max_len = 17
 
 
+def shorten(str: str, max: int) -> str:
+    return str[: max - 3] + "..." if len(str) > max else str
+
+
 def shorten_gesture_name(name: str) -> str:
-    return name[: name_max_len - 3] + "..." if len(name) > name_max_len else name
+    return shorten(name, name_max_len)
 
 
 def get_or_default(sequence, index, default=None):
@@ -34,6 +38,10 @@ def get_or_default(sequence, index, default=None):
 # y que no sea un programa sino una carpeta
 def is_valid_path(path: str) -> bool:
     return os.path.exists(path) and os.path.isdir(path)
+
+
+def is_valid_file(filepath: str) -> bool:
+    return os.path.exists(filepath) and not os.path.isdir(filepath)
 
 
 # LA PALETA DE COLORES DE LA APP
@@ -59,14 +67,35 @@ def supress_warnings():
     )
 
 
+def pick_file() -> str:
+    return filedialog.askopenfilename(
+        initialdir="/",
+        title="Selecciona un archivo",
+        filetypes=[
+            ("Todos los archivos", "*.*"),
+        ],
+    )
+
+
+def pick_folder() -> str:
+    file_path = filedialog.askdirectory(
+        initialdir="/",
+        title="Secciona la ubicación de la carpeta",
+    )
+
+    return file_path
+
+
 def save_photo_path() -> str:
+    default_extension = ".png"
+
     now = datetime.now()
-    sample_name = now.strftime("%Y-%m-%d %H:%M:%S") + ".png"
+    sample_name = now.strftime("%Y%m%d%_H:%M:%S") + default_extension
 
     file_path = filedialog.asksaveasfilename(
         initialdir="/",
         title="Secciona la ubicación de la captura de pantalla",
-        defaultextension=".png",
+        defaultextension=default_extension,
         filetypes=[
             ("Archivo PNG", "*.png"),
             ("Archivo JPEG", "*.jpg;*.jpeg"),

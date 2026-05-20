@@ -19,6 +19,11 @@ from utils import (
     get_hand_profile_from_repr,
     get_repr_for_action,
     get_repr_for_hand_profile,
+    is_valid_file,
+    is_valid_path,
+    pick_file,
+    pick_folder,
+    shorten,
     shorten_gesture_name,
 )
 
@@ -243,9 +248,7 @@ class ParamPicker(ctk.CTkFrame):
             return
 
         current_frame.pack(fill="both", expand=True)
-
-        if initial_value is not None:
-            current_frame.adjust_value(initial_value)
+        current_frame.adjust_value(initial_value)
 
     def set_layout(self):
         pass
@@ -281,10 +284,10 @@ class ParamPicker(ctk.CTkFrame):
         )
         self.disable.grid(row=0, column=1)
 
-        setattr(frame, "adjust_value", lambda v: self.binary_value.set(v))
+        setattr(frame, "adjust_value", lambda v: self.binary_value.set(v if v else 1))
 
-    def change_numeric_value(self):
-        self._value = self.numeric_entry.get_value()
+    def change_numeric_value(self, value):
+        self._value = value
         self._state = self.numeric_entry.get_state()
 
     def display_numeric_param(self):
@@ -293,15 +296,23 @@ class ParamPicker(ctk.CTkFrame):
 
         self.frames.append(frame)
 
-        self.numeric_entry = NumericInput(frame, font=self.font, min=-1, max=1)
-        self.bind("<Key>", lambda _: self.change_numeric_value())
+        self.numeric_entry = NumericInput(
+            frame, font=self.font, min=-1, max=1, onchange=self.change_numeric_value
+        )
         self.numeric_entry.grid(row=0, column=0)
 
         setattr(frame, "adjust_value", lambda v: self.replace_contents(v))
 
-    def replace_contents(self, new_value):
+    def replace_contents(self, new_value: int | None):
+        print(new_value)
+
         self.numeric_entry.delete(0, "end")
-        self.numeric_entry.insert(0, new_value)
+        self.numeric_entry.insert(0, new_value if new_value is not None else "")
+
+        if not new_value:
+            self._value = 0
+        else:
+            self._value = float(new_value)
 
     def display_file_picker(self):
         frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -309,13 +320,41 @@ class ParamPicker(ctk.CTkFrame):
 
         self.frames.append(frame)
 
+        self.current_file_label = ctk.CTkLabel(frame, font=self.font)
+        self.current_file_label.grid(row=0, column=0, padx=10)
+
         self.browser_button = ctk.CTkButton(
-            frame, text="Buscar archivo", font=self.font, height=32
+            frame,
+            text="Buscar archivo",
+            font=self.font,
+            height=32,
+            command=self.change_file_picker_value,
         )
-        self.browser_button.grid(row=0, column=0)
+        self.browser_button.grid(row=0, column=1)
         self._state = ParamConfigurationState(is_valid=True)
 
-        setattr(frame, "adjust_value", lambda _: None)
+        setattr(frame, "adjust_value", lambda v: self.change_file_value(v))
+
+    def change_file_value(self, filepath: str | None):
+        if filepath is None:
+            self.current_file_label.configure(text="")
+            self._state = ParamConfigurationState(
+                is_valid=False, error_message="No se ha elegido el archivo"
+            )
+            self._value = None
+
+            return
+
+        self._state = ParamConfigurationState(is_valid=is_valid_file(filepath))
+        self._value = filepath
+
+        self.current_file_label.configure(text=shorten(filepath, 30))
+
+    def change_file_picker_value(self):
+        file = pick_file()
+
+        if file:
+            self.change_file_value(file)
 
     def display_folder_picker(self):
         frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -323,13 +362,42 @@ class ParamPicker(ctk.CTkFrame):
 
         self.frames.append(frame)
 
+        self.current_folder_label = ctk.CTkLabel(frame, font=self.font)
+        self.current_folder_label.grid(row=0, column=0, padx=10)
+
         self.browser_button = ctk.CTkButton(
-            frame, text="Buscar carpeta", font=self.font, height=32
+            frame,
+            text="Buscar carpeta",
+            font=self.font,
+            width=100,
+            height=32,
+            command=self.change_folder_picker_value,
         )
-        self.browser_button.grid(row=0, column=0)
+        self.browser_button.grid(row=0, column=1)
         self._state = ParamConfigurationState(is_valid=True)
 
-        setattr(frame, "adjust_value", lambda v: None)
+        setattr(frame, "adjust_value", lambda v: self.change_folder_value(v))
+
+    def change_folder_value(self, folderpath: str | None):
+        if folderpath is None:
+            self.current_folder_label.configure(text="")
+            self._state = ParamConfigurationState(
+                is_valid=False, error_message="No se ha proporcionado ninguna carpeta"
+            )
+            self._value = None
+
+            return
+
+        self._state = ParamConfigurationState(is_valid=is_valid_path(folderpath))
+        self._value = folderpath
+
+        self.current_folder_label.configure(text=shorten(folderpath, 30))
+
+    def change_folder_picker_value(self):
+        folder = pick_folder()
+
+        if folder:
+            self.change_folder_value(folder)
 
 
 class SettingsForm(ctk.CTkFrame):
@@ -388,7 +456,7 @@ class SettingsForm(ctk.CTkFrame):
         self.param_picker = ParamPicker(
             self.action_panel,
             paramtype=paramtype,
-            initial_value=self.get_current_param_value,
+            initial_value=self.get_current_param_value(),
         )
         self.param_picker.grid(row=0, column=1, padx=(10, 0))
 
@@ -396,7 +464,8 @@ class SettingsForm(ctk.CTkFrame):
         if self.current_gesture is None:
             return
 
-        self.change_param_type_form()
+        self.update_config()
+        self.change_param_type_form(change_value=False)
 
     def get_current_param_value(self) -> float | int | str | bool | None:
         value = None
@@ -410,14 +479,12 @@ class SettingsForm(ctk.CTkFrame):
         action = get_action_from_repr(self.action_selector.get())
         return get_actions_parameter_type()[action]
 
-    def change_param_type_form(self):
+    def change_param_type_form(self, change_value=True):
         required_param_type = get_actions_parameter_type()[self.get_selected_action()]
+
         value = None
 
-        if (
-            self.current_gesture is not None
-            and self.current_gesture.effect == self.get_selected_action()
-        ):
+        if self.current_gesture is not None and change_value:
             value = self.get_current_param_value()
 
         self.param_picker.set_param_type(required_param_type, value)
@@ -447,6 +514,7 @@ class SettingsForm(ctk.CTkFrame):
 
         self.current_gesture = copy.deepcopy(f[0])
         self.adjust_current_configuration_display()
+        self.change_param_type_form()
 
     def display_current_gesture_selector(self):
         self.gesture_selector = ctk.CTkComboBox(
@@ -519,7 +587,6 @@ class SettingsForm(ctk.CTkFrame):
 
         #  ACTUALIZAR EL ACTION
         self.current_gesture.effect = self.get_selected_action()
-        # self.current_gesture.param = self.param_picker.get_value()
 
         self.adjust_current_configuration_display()
 
@@ -561,7 +628,7 @@ class SettingsForm(ctk.CTkFrame):
         self.right_hand_icon = ImagesEffectLabel(
             self.form_panel, text="", images_pack=right_images_pack
         )
-        self.right_hand_icon.grid(row=0, column=1, sticky="w")
+        self.right_hand_icon.grid(row=0, column=1, sticky="e")
 
         checkboxes = []
 
@@ -572,7 +639,7 @@ class SettingsForm(ctk.CTkFrame):
                 command=self.update_config,
                 font=loader.get_fonts()["regular"],
             )
-            ch.grid(row=1, column=i, pady=10, sticky="we")
+            ch.grid(row=1, column=i, pady=10)
             checkboxes.append(ch)
 
         (self.left_hand_activator, self.right_hand_activator, *_) = checkboxes
@@ -711,7 +778,6 @@ class SettingsForm(ctk.CTkFrame):
 
         # ADJUST ACTION
         self.action_selector.set(get_repr_for_action(self.current_gesture.effect))
-        self.change_param_type_form()
 
     def display_visible_fingers_selector(self):
         fingers_names = ["Pulgar", "Índice", "Medio", "Anular", "Meñique"]
@@ -772,6 +838,9 @@ class SettingsForm(ctk.CTkFrame):
 
     def save_new_config(self):
         if self.current_gesture is not None:
+            self.current_gesture.param = self.param_picker.get_value()
+            print(self.current_gesture.param)
+
             update_gesture(self.current_gesture)
             # GUARDAR LA REFERENCIA DEL NUEVO GESTO EN LA LISTA DE GESTOS
             # SE PODIA TAMBEIEN HACER EL fetch_gestures PERO ESO LEE EL JSON
@@ -791,7 +860,8 @@ class SettingsForm(ctk.CTkFrame):
         self.save_button = ctk.CTkButton(
             self.form_header_panel,
             height=31,
-            text="",
+            width=40,
+            text="Guardar",
             font=loader.get_fonts()["regular"],
             command=self.save_new_config,
             fg_color="gold",
@@ -806,7 +876,12 @@ class ImagesEffectLabel(ctk.CTkLabel):
         images_pack: MouseEventsImagesPack,
         text="",
     ):
-        super().__init__(master, fg_color="transparent", text_color="white", text=text)
+        super().__init__(
+            master,
+            fg_color="transparent",
+            text_color="white",
+            text=text,
+        )
         self.images_pack = images_pack
         self.activate_image("noEvent")
 
@@ -883,12 +958,15 @@ class NumericInput(ctk.CTkEntry):
         width=100,
         height=31,
         font=None,
+        onchange=None,
     ):
         super().__init__(master, width=width, height=height, font=font)
         self.min = min
         self.max = max
         self.allow_float = allow_float
         self.allow_negatives = allow_negatives
+
+        self.onchange = onchange
 
         if not allow_negatives and min is not None:
             raise ValueError(
@@ -911,6 +989,10 @@ class NumericInput(ctk.CTkEntry):
         if data != "":
             if not data.isdigit() and not can_have_decimals:
                 self.variable.set(data[:-1])
+                return
+
+        if self.onchange and data != "":
+            self.onchange(float(self.variable.get()))
 
     def get_value(self):
         if self.allow_float:
