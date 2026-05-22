@@ -432,11 +432,13 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.gesture_info_panel = ctk.CTkFrame(self, fg_color="transparent", width=340)
         self.gesture_info_panel.rowconfigure((0, 1, 2), pad=50)
         self.gesture_info_panel.rowconfigure((3), weight=1)
-        self.gesture_info_panel.grid(row=0, column=0, sticky="wns", pady=(40, 0))
+        self.gesture_info_panel.grid(
+            row=0, column=0, sticky="wns", padx=40, pady=(40, 0)
+        )
 
         self.form_panel = ctk.CTkFrame(self, fg_color="transparent", width=600)
         self.form_panel.columnconfigure((0, 1), weight=1, pad=30)
-        self.form_panel.grid(row=0, column=1, pady=(40, 0))
+        self.form_panel.grid(row=0, column=1, padx=40, pady=(40, 0))
 
         self.display_current_gesture_selector()
         self.display_name_field()

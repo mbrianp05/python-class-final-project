@@ -46,11 +46,11 @@ class ConfigureGesturesView(ctk.CTkFrame):
     def set_layout(self):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
-        self.pack(padx=20, pady=20)
+        self.pack(pady=20)
 
     def display_form(self):
         self.form = SettingsForm(self, self.notifier)
-        self.form.grid(row=1, column=0, padx=40, pady=0, sticky="wens")
+        self.form.grid(row=1, column=0, pady=0, sticky="wens")
 
     def display_header(self):
         self.header = SettingsHeader(self, controller=self.master)
