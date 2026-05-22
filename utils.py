@@ -19,6 +19,12 @@ def verify_os() -> None:
 name_max_len = 17
 
 
+def shorten_middle(str: str, max: int) -> str:
+    ends = int(max / 2) + max % 2
+
+    return str[:ends] + "..." + str[-ends:]
+
+
 def shorten(str: str, max: int) -> str:
     return str[: max - 3] + "..." if len(str) > max else str
 

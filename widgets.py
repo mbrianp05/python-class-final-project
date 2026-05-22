@@ -23,8 +23,8 @@ from utils import (
     is_valid_path,
     pick_file,
     pick_folder,
-    shorten,
     shorten_gesture_name,
+    shorten_middle,
 )
 
 
@@ -190,6 +190,8 @@ class SettingsHeader(ctk.CTkFrame):
 
 
 class ParamPicker(ctk.CTkFrame):
+    PATH_MAX_LEN = 45
+
     def __init__(
         self,
         master,
@@ -325,7 +327,7 @@ class ParamPicker(ctk.CTkFrame):
             frame,
             text="Buscar archivo",
             font=self.font,
-            height=32,
+            height=31,
             command=self.change_file_picker_value,
         )
         self.browser_button.grid(row=0, column=1)
@@ -346,7 +348,9 @@ class ParamPicker(ctk.CTkFrame):
         self._state = ParamConfigurationState(is_valid=is_valid_file(filepath))
         self._value = filepath
 
-        self.current_file_label.configure(text=shorten(filepath, 30))
+        self.current_file_label.configure(
+            text=shorten_middle(filepath, self.PATH_MAX_LEN)
+        )
 
     def change_file_picker_value(self):
         file = pick_file()
@@ -368,7 +372,7 @@ class ParamPicker(ctk.CTkFrame):
             text="Buscar carpeta",
             font=self.font,
             width=100,
-            height=32,
+            height=31,
             command=self.change_folder_picker_value,
         )
         self.browser_button.grid(row=0, column=1)
@@ -389,7 +393,9 @@ class ParamPicker(ctk.CTkFrame):
         self._state = ParamConfigurationState(is_valid=is_valid_path(folderpath))
         self._value = folderpath
 
-        self.current_folder_label.configure(text=shorten(folderpath, 30))
+        self.current_folder_label.configure(
+            text=shorten_middle(folderpath, self.PATH_MAX_LEN)
+        )
 
     def change_folder_picker_value(self):
         folder = pick_folder()
@@ -398,7 +404,7 @@ class ParamPicker(ctk.CTkFrame):
             self.change_folder_value(folder)
 
 
-class SettingsForm(ctk.CTkFrame):
+class SettingsForm(ctk.CTkScrollableFrame):
     def __init__(self, master):
         super().__init__(master)
 
@@ -412,12 +418,14 @@ class SettingsForm(ctk.CTkFrame):
 
         self.set_layout()
 
-        self.form_header_panel = ctk.CTkFrame(self, fg_color="transparent")
-        self.form_header_panel.grid(row=0, column=0, sticky="w")
+        self.gesture_info_panel = ctk.CTkFrame(self, fg_color="transparent", width=340)
+        self.gesture_info_panel.rowconfigure((0, 1, 2), pad=50)
+        self.gesture_info_panel.rowconfigure((3), weight=1)
+        self.gesture_info_panel.grid(row=0, column=0, sticky="wn", pady=(40, 0))
 
-        self.form_panel = ctk.CTkFrame(self, fg_color="transparent")
-        self.form_panel.columnconfigure((0, 1), weight=1, pad=100)
-        self.form_panel.grid(row=1, column=0, pady=(40, 0), columnspan=2)
+        self.form_panel = ctk.CTkFrame(self, fg_color="transparent", width=600)
+        self.form_panel.columnconfigure((0, 1), weight=1, pad=30)
+        self.form_panel.grid(row=0, column=1, pady=(40, 0))
 
         self.display_current_gesture_selector()
         self.display_name_field()
@@ -430,24 +438,14 @@ class SettingsForm(ctk.CTkFrame):
 
         self.feedback_label = FloatingFeedbackLabel(self)
 
-        self.after(
-            500,
-            lambda: self.feedback_label.show_variant(
-                MessageType.SUCCESS, "✨ ¡Formulario listo para usar! ✨", 3000
-            ),
-        )
-
     def set_layout(self):
-        self.columnconfigure((0, 1), weight=1)
+        self.columnconfigure((1), weight=1)
 
     def display_action_selector(self):
         values = self.get_action_values()
 
-        self.action_panel = ctk.CTkFrame(self, fg_color="transparent")
-        self.action_panel.grid(row=0, column=1)
-
         self.action_selector = ctk.CTkComboBox(
-            self.action_panel,
+            self.gesture_info_panel,
             values=values,
             width=360,
             height=32,
@@ -456,16 +454,16 @@ class SettingsForm(ctk.CTkFrame):
             command=lambda _: self.change_action(),
         )
         self.action_selector.set(values[0])
-        self.action_selector.grid(row=0, column=0)
+        self.action_selector.grid(row=1, column=0, columnspan=2, sticky="we")
 
         paramtype = self.get_paramtype_for_current_action()
 
         self.param_picker = ParamPicker(
-            self.action_panel,
+            self.gesture_info_panel,
             paramtype=paramtype,
             initial_value=self.get_current_param_value(),
         )
-        self.param_picker.grid(row=0, column=1, padx=(10, 0))
+        self.param_picker.grid(row=2, column=0, sticky="w", columnspan=2)
 
     def change_action(self):
         if self.current_gesture is None:
@@ -500,13 +498,13 @@ class SettingsForm(ctk.CTkFrame):
         # APLICAR MAX LENGTH !!!!
         text = "" if self.current_gesture is None else self.current_gesture.name
         self.name_field = ctk.CTkEntry(
-            self.form_header_panel,
-            width=200,
+            self.gesture_info_panel,
             height=31,
+            width=220,
             font=loader.get_fonts()["regular"],
         )
         self.name_field.insert(0, text)
-        self.name_field.grid(row=0, column=1, padx=30)
+        self.name_field.grid(row=0, column=1, sticky="we")
         self.name_field.bind("<KeyRelease>", lambda _: self.update_config())
 
     # SETEA EL GESTO QUE SE ESTÁ CONFIGURANDO A PARTIR DEL VALOR
@@ -525,9 +523,10 @@ class SettingsForm(ctk.CTkFrame):
 
     def display_current_gesture_selector(self):
         self.gesture_selector = ctk.CTkComboBox(
-            self.form_header_panel,
+            self.gesture_info_panel,
             values=[g.name for g in self.gestures],
-            width=200,
+            height=31,
+            width=220,
             command=lambda _: self.set_current_gesture(),
             state="readonly",
             font=loader.get_fonts()["regular"],
@@ -536,7 +535,12 @@ class SettingsForm(ctk.CTkFrame):
         if self.current_gesture is not None:
             self.gesture_selector.set(self.current_gesture.name)
 
-        self.gesture_selector.grid(row=0, column=0)
+        self.gesture_selector.grid(
+            row=0,
+            column=0,
+            padx=(0, 15),
+            sticky="we",
+        )
 
     def get_selected_action(self) -> Action:
         selected_action = self.action_selector.get()
@@ -619,7 +623,7 @@ class SettingsForm(ctk.CTkFrame):
         return [get_repr_for_action(p) for p in actions]
 
     def display_active_hands_selector(self):
-        icons = loader.get_icons(scale=340)
+        icons = loader.get_icons(scale=260)
         left_images_pack = MouseEventsImagesPack(
             noEvent=icons["hand-1"], mouseEnter=icons["hand-1-darker"]
         )
@@ -860,21 +864,17 @@ class SettingsForm(ctk.CTkFrame):
 
     # PENDIENTE DE IMPLEMENTACIÓN
     def feedback(self):
-        self.feedback_label.show_variant(
-            MessageType.SUCCESS, "Gesto guardado correctamente"
-        )
+        self.feedback_label.show_variant(MessageType.SUCCESS, "✨ ¡Gesto guardado! ✨")
 
     def display_save_settings_button(self):
         self.save_button = ctk.CTkButton(
-            self.form_header_panel,
+            self.gesture_info_panel,
             height=31,
-            width=40,
             text="Guardar",
             font=loader.get_fonts()["regular"],
             command=self.save_new_config,
-            fg_color="gold",
         )
-        self.save_button.grid(row=0, column=3, sticky="w")
+        self.save_button.grid(row=3, column=0, sticky="ws", columnspan=2)
 
 
 class ImagesEffectLabel(ctk.CTkLabel):
@@ -967,8 +967,9 @@ class NumericInput(ctk.CTkEntry):
         height=31,
         font=None,
         onchange=None,
+        **kwargs,
     ):
-        super().__init__(master, width=width, height=height, font=font)
+        super().__init__(master, width=width, height=height, font=font, **kwargs)
         self.min = min
         self.max = max
         self.allow_float = allow_float
@@ -1043,22 +1044,19 @@ class NumericInput(ctk.CTkEntry):
 
 class FloatingFeedbackLabel(ctk.CTkLabel):
     def __init__(self, master, **kwargs):
-        # Configuración base del label
         super().__init__(
             master,
             text="",
             corner_radius=10,
             padx=20,
             pady=12,
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=loader.get_fonts()["bold"],
             **kwargs,
         )
 
-        self.master = master
         self._after_id = None
-        self._is_visible = False
+        self.master = master
 
-        # Configurar colores según el tipo
         self._variants = {
             MessageType.ERROR: {
                 "bg": "#E53935",
@@ -1074,10 +1072,6 @@ class FloatingFeedbackLabel(ctk.CTkLabel):
             },
         }
 
-        # Configuración de posición (izquierda)
-        self.margin_left = 20  # Margen desde el borde izquierdo
-        self.margin_top = 20  # Margen desde el borde superior
-
         # Configuración inicial
         self.configure(
             fg_color=self._variants[MessageType.INFO]["bg"],
@@ -1086,11 +1080,12 @@ class FloatingFeedbackLabel(ctk.CTkLabel):
         )
 
     def show_variant(self, message_type: MessageType, text: str, duration: int = 3000):
-        pass
+        self.configure(text=text, fg_color=self._variants[message_type]["bg"])
+        self.grid(row=0, column=0)
+
+        self._after_id = self.after(duration, self.hide)
 
     def hide(self):
-        """Oculta el mensaje flotante"""
-        self._is_visible = False
         self.place_forget()
         if self._after_id:
             self.after_cancel(self._after_id)
@@ -1106,6 +1101,7 @@ class ActivationFeedbackLabel(ctk.CTkLabel):
         transition: HighlightTransition,
         font: ctk.CTkFont | None = None,
         image: tksvg.SvgImage | None = None,
+        **kwargs,
     ):
         super().__init__(
             master,
@@ -1117,6 +1113,7 @@ class ActivationFeedbackLabel(ctk.CTkLabel):
             compound="left",
             anchor="w",
             corner_radius=30,
+            **kwargs,
         )
         self.transition = transition
 
