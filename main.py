@@ -1,9 +1,10 @@
 import customtkinter as ctk
 
 import loader
-from uiclasses import View
+from uiclasses import MessageType, View
 from utils import create_config_file_if_not_exists, supress_warnings, verify_os
 from views import ConfigureGesturesView, GestureDetectionView
+from widgets import FloatingFeedbackLabel
 
 loader.load_fonts_files()
 create_config_file_if_not_exists()
@@ -18,12 +19,14 @@ class App(ctk.CTk):
 
         self.views = {}
 
+        self.feedback = FloatingFeedbackLabel(self)
+
         self.set_views()
         self.maximize_window()
 
     def set_views(self):
         self.views[View.DETECTION_VIEW] = GestureDetectionView(self)
-        self.views[View.SETTINGS_VIEW] = ConfigureGesturesView(self)
+        self.views[View.SETTINGS_VIEW] = ConfigureGesturesView(self, notifier=self)
 
         # Esto es temporal
         self.bind("<Key>", self.views[View.DETECTION_VIEW].highlight_gesture)
@@ -57,6 +60,9 @@ class App(ctk.CTk):
     def on_closing(self):
         for view in self.views.values():
             getattr(view, "on_closing", lambda: None)()
+
+    def notify(self, type: MessageType, text: str):
+        self.feedback.show_variant(type, text)
 
 
 if __name__ == "__main__":

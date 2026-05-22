@@ -405,8 +405,10 @@ class ParamPicker(ctk.CTkFrame):
 
 
 class SettingsForm(ctk.CTkScrollableFrame):
-    def __init__(self, master):
+    def __init__(self, master, notifier=None):
         super().__init__(master)
+
+        self.notifier = notifier
 
         self.configure(fg_color="transparent")
         self.gestures = fetch_gestures()
@@ -435,8 +437,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.display_save_settings_button()
 
         self.adjust_current_configuration_display()
-
-        self.feedback_label = FloatingFeedbackLabel(self)
 
     def set_layout(self):
         self.columnconfigure((1), weight=1)
@@ -862,7 +862,10 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
     # PENDIENTE DE IMPLEMENTACIÓN
     def feedback(self):
-        self.feedback_label.show_variant(MessageType.SUCCESS, "✨ ¡Gesto guardado! ✨")
+        if self.notifier is None:
+            return
+
+        self.notifier.notify(MessageType.SUCCESS, "✨ ¡Gesto guardado! ✨")  # type: ignore
 
     def display_save_settings_button(self):
         self.save_button = ctk.CTkButton(
@@ -1040,6 +1043,7 @@ class NumericInput(ctk.CTkEntry):
         return state
 
 
+# HAY QUE MEJORAR ESTO XD
 class FloatingFeedbackLabel(ctk.CTkLabel):
     def __init__(self, master, **kwargs):
         super().__init__(
@@ -1077,14 +1081,16 @@ class FloatingFeedbackLabel(ctk.CTkLabel):
             justify="left",
         )
 
-    def show_variant(self, message_type: MessageType, text: str, duration: int = 3000):
+    def show_variant(self, message_type: MessageType, text: str, duration: int = 4000):
         self.configure(text=text, fg_color=self._variants[message_type]["bg"])
-        self.grid(row=0, column=0)
+        self.pack(anchor="nw")
 
         self._after_id = self.after(duration, self.hide)
 
     def hide(self):
         self.place_forget()
+        self.pack_forget()
+
         if self._after_id:
             self.after_cancel(self._after_id)
             self._after_id = None

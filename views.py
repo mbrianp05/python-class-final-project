@@ -34,8 +34,10 @@ class GestureDetectionView(ctk.CTkFrame):
 
 
 class ConfigureGesturesView(ctk.CTkFrame):
-    def __init__(self, master):
+    def __init__(self, master, notifier=None):
         super().__init__(master)
+
+        self.notifier = notifier
 
         self.set_layout()
         self.display_header()
@@ -47,7 +49,7 @@ class ConfigureGesturesView(ctk.CTkFrame):
         self.pack(padx=20, pady=20)
 
     def display_form(self):
-        self.form = SettingsForm(self)
+        self.form = SettingsForm(self, self.notifier)
         self.form.grid(row=1, column=0, padx=40, pady=0, sticky="wens")
 
     def display_header(self):
