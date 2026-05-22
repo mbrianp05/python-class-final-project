@@ -321,7 +321,7 @@ class ParamPicker(ctk.CTkFrame):
         self.frames.append(frame)
 
         self.current_file_label = ctk.CTkLabel(frame, font=self.font)
-        self.current_file_label.grid(row=0, column=0, padx=10)
+        self.current_file_label.grid(row=0, column=0, padx=(0, 10), sticky="w")
 
         self.browser_button = ctk.CTkButton(
             frame,
@@ -365,7 +365,7 @@ class ParamPicker(ctk.CTkFrame):
         self.frames.append(frame)
 
         self.current_folder_label = ctk.CTkLabel(frame, font=self.font)
-        self.current_folder_label.grid(row=0, column=0, padx=10)
+        self.current_folder_label.grid(row=0, column=0, padx=(0, 10), sticky="w")
 
         self.browser_button = ctk.CTkButton(
             frame,
@@ -421,7 +421,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.gesture_info_panel = ctk.CTkFrame(self, fg_color="transparent", width=340)
         self.gesture_info_panel.rowconfigure((0, 1, 2), pad=50)
         self.gesture_info_panel.rowconfigure((3), weight=1)
-        self.gesture_info_panel.grid(row=0, column=0, sticky="wn", pady=(40, 0))
+        self.gesture_info_panel.grid(row=0, column=0, sticky="wns", pady=(40, 0))
 
         self.form_panel = ctk.CTkFrame(self, fg_color="transparent", width=600)
         self.form_panel.columnconfigure((0, 1), weight=1, pad=30)
@@ -718,9 +718,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         # ADJUST HANDS NUMBER AND HAND PROFILE
         is_left_active, is_right_active = self.current_gesture.settings.hands
-        (setted_profile_left, setted_profile_right) = (
-            self.current_gesture.settings.profile
-        )
+        (set_profile_left, set_profile_right) = self.current_gesture.settings.profile
 
         form_fields = {
             "hand_activator": (self.left_hand_activator, self.right_hand_activator),
@@ -729,7 +727,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 self.right_hand_profile_selector,
             ),
             "hand_icon": (self.left_hand_icon, self.right_hand_icon),
-            "setted_profile": (setted_profile_left, setted_profile_right),
+            "setted_profile": (set_profile_left, set_profile_right),
         }
 
         values = {
@@ -739,8 +737,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
             },
             "profile": {
                 True: [
-                    get_repr_for_hand_profile(setted_profile_left),
-                    get_repr_for_hand_profile(setted_profile_right),
+                    get_repr_for_hand_profile(set_profile_left),
+                    get_repr_for_hand_profile(set_profile_right),
                 ],
                 False: [self.get_hand_profile_values()[0]] * 2,
             },
