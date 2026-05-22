@@ -13,7 +13,7 @@ from actions import get_actions_parameter_type
 from gesture import Gesture, GestureRecognition, HandProfile
 from services import fetch_gestures, update_gesture
 from uiclasses import HighlightTransition, MessageType, MouseEventsImagesPack, View
-from utilityclasses import Action, Finger, ParamConfigurationState, ParamType
+from utilityclasses import Action, Finger, FormState, ParamType
 from utils import (
     get_action_from_repr,
     get_hand_profile_from_repr,
@@ -203,7 +203,9 @@ class ParamPicker(ctk.CTkFrame):
         self.font = loader.get_fonts()["regular"]
 
         self.frames = []
-        self._state: ParamConfigurationState | None = None
+        self._state: FormState = FormState(
+            is_valid=False, error_message="Estado inicial"
+        )
 
         self.set_layout()
         self.display_file_picker()
@@ -220,10 +222,11 @@ class ParamPicker(ctk.CTkFrame):
     def get_value(self):
         return self._value
 
-    def get_state(self) -> ParamConfigurationState | None:
+    def get_state(self) -> FormState:
         if self._value is None and self.paramtype is None:
-            return ParamConfigurationState(
-                error_message="No se ha proporcionado el valor del parámetro"
+            return FormState(
+                is_valid=False,
+                error_message="No se ha proporcionado el valor del parámetro",
             )
 
         return self._state
@@ -256,7 +259,7 @@ class ParamPicker(ctk.CTkFrame):
         pass
 
     def change_binary_value(self):
-        self._state = ParamConfigurationState(is_valid=True)
+        self._state = FormState(is_valid=True)
         self._value = bool(self.binary_value.get())
 
     def display_binary_param(self):
@@ -331,21 +334,24 @@ class ParamPicker(ctk.CTkFrame):
             command=self.change_file_picker_value,
         )
         self.browser_button.grid(row=0, column=1)
-        self._state = ParamConfigurationState(is_valid=True)
+        self._state = FormState(is_valid=True)
 
         setattr(frame, "adjust_value", lambda v: self.change_file_value(v))
 
     def change_file_value(self, filepath: str | None):
         if filepath is None:
             self.current_file_label.configure(text="")
-            self._state = ParamConfigurationState(
+            self._state = FormState(
                 is_valid=False, error_message="No se ha elegido el archivo"
             )
             self._value = None
 
             return
 
-        self._state = ParamConfigurationState(is_valid=is_valid_file(filepath))
+        is_valid = is_valid_file(filepath)
+        msg = None if is_valid else "El archivo no fue encontrado"
+
+        self._state = FormState(is_valid=is_valid, error_message=msg)
         self._value = filepath
 
         self.current_file_label.configure(
@@ -376,21 +382,22 @@ class ParamPicker(ctk.CTkFrame):
             command=self.change_folder_picker_value,
         )
         self.browser_button.grid(row=0, column=1)
-        self._state = ParamConfigurationState(is_valid=True)
-
         setattr(frame, "adjust_value", lambda v: self.change_folder_value(v))
 
     def change_folder_value(self, folderpath: str | None):
         if folderpath is None:
             self.current_folder_label.configure(text="")
-            self._state = ParamConfigurationState(
+            self._state = FormState(
                 is_valid=False, error_message="No se ha proporcionado ninguna carpeta"
             )
             self._value = None
 
             return
 
-        self._state = ParamConfigurationState(is_valid=is_valid_path(folderpath))
+        is_valid = is_valid_path(folderpath)
+        msg = None if is_valid else "La carpeta no fue encontrada"
+
+        self._state = FormState(is_valid=is_valid, error_message=msg)
         self._value = folderpath
 
         self.current_folder_label.configure(
@@ -412,6 +419,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         self.configure(fg_color="transparent")
         self.gestures = fetch_gestures()
+
+        self._inner_state = FormState(is_valid=True)
 
         # ESTO DEBERIA SER AUTOMATICO
         self.current_gesture: Gesture | None = copy.deepcopy(
@@ -453,9 +462,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
             font=loader.get_fonts()["regular"],
             command=lambda _: self.change_action(),
         )
-        self.action_selector.set(values[0])
         self.action_selector.grid(row=1, column=0, columnspan=2, sticky="we")
 
+        self.adjust_current_gesture_effect()
         paramtype = self.get_paramtype_for_current_action()
 
         self.param_picker = ParamPicker(
@@ -482,6 +491,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
     def get_paramtype_for_current_action(self) -> ParamType | None:
         action = get_action_from_repr(self.action_selector.get())
+
         return get_actions_parameter_type()[action]
 
     def change_param_type_form(self, change_value=True):
@@ -505,7 +515,23 @@ class SettingsForm(ctk.CTkScrollableFrame):
         )
         self.name_field.insert(0, text)
         self.name_field.grid(row=0, column=1, sticky="we")
-        self.name_field.bind("<KeyRelease>", lambda _: self.update_config())
+        self.name_field.bind("<KeyRelease>", lambda _: self._update_name())
+
+    def check_name(self):
+        if self.current_gesture is None:
+            return
+
+        if self.current_gesture.name == "":
+            self._inner_state = FormState(
+                False, "El nombre del gesto no ha sido porporcionado"
+            )
+
+    def _update_name(self):
+        if self.current_gesture is None:
+            return
+
+        self.current_gesture.name = self.name_field.get().strip(" \n\r")
+        self.check_name()
 
     # SETEA EL GESTO QUE SE ESTÁ CONFIGURANDO A PARTIR DEL VALOR
     # SELECCIONADO EN EL COMBOBOX DE LOS GESTOS
@@ -553,7 +579,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
             return
 
         settings = self.current_gesture.settings
-        self.current_gesture.name = self.name_field.get().strip(" \n\r")
 
         # ACTUALIZAR LAS MANOS
         is_left_hand_active = bool(self.left_hand_activator.get())
@@ -716,9 +741,16 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.name_field.delete(0, "end")
         self.name_field.insert(0, self.current_gesture.name)
 
+        self.check_name()
+
         # ADJUST HANDS NUMBER AND HAND PROFILE
         is_left_active, is_right_active = self.current_gesture.settings.hands
-        (set_profile_left, set_profile_right) = self.current_gesture.settings.profile
+        set_profile_left, set_profile_right = self.current_gesture.settings.profile
+
+        if not is_left_active and not is_right_active:
+            self._inner_state = FormState(
+                False, "Al menos una de las dos manos debe ser visible en el gesto"
+            )
 
         form_fields = {
             "hand_activator": (self.left_hand_activator, self.right_hand_activator),
@@ -786,6 +818,12 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 ch.deselect()
 
         # ADJUST ACTION
+        self.adjust_current_gesture_effect()
+
+    def adjust_current_gesture_effect(self):
+        if self.current_gesture is None:
+            return
+
         self.action_selector.set(get_repr_for_action(self.current_gesture.effect))
 
     def display_visible_fingers_selector(self):
@@ -847,17 +885,20 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
     def save_new_config(self):
         if self.current_gesture is not None:
-            self.current_gesture.param = self.param_picker.get_value()
+            inner_state = self._inner_state
+            outer_state = self.param_picker.get_state()
 
-            update_gesture(self.current_gesture)
-            # GUARDAR LA REFERENCIA DEL NUEVO GESTO EN LA LISTA DE GESTOS
-            # SE PODIA TAMBEIEN HACER EL fetch_gestures PERO ESO LEE EL JSON
-            # POR LO QUE ES MAS CARO A NIVEL DE RENDIMIENTO
-            self.update_local_gesture()
+            if inner_state.is_valid and outer_state.is_valid:
+                self.current_gesture.param = self.param_picker.get_value()
+
+                update_gesture(self.current_gesture)
+                # GUARDAR LA REFERENCIA DEL NUEVO GESTO EN LA LISTA DE GESTOS
+                # SE PODIA TAMBEIEN HACER EL fetch_gestures PERO ESO LEE EL JSON
+                # POR LO QUE ES MAS CARO A NIVEL DE RENDIMIENTO
+                self.update_local_gesture()
 
         # AQUI LA LOGICA PARA CREAR UN NUEVO GESTO
-
-        self.display_current_gesture_selector()
+        # self.display_current_gesture_selector()
         self.feedback()
 
     # PENDIENTE DE IMPLEMENTACIÓN
@@ -865,7 +906,23 @@ class SettingsForm(ctk.CTkScrollableFrame):
         if self.notifier is None:
             return
 
-        self.notifier.notify(MessageType.SUCCESS, "✨ ¡Gesto guardado! ✨")  # type: ignore
+        outer_state = self.param_picker.get_state()
+
+        state = self._inner_state.is_valid and outer_state.is_valid
+
+        type = MessageType.SUCCESS if state else MessageType.ERROR
+
+        msg = "Gesto guardado correctamente"
+
+        if not self._inner_state.is_valid:
+            msg = self._inner_state.error_message
+        elif not outer_state.is_valid:
+            msg = outer_state.error_message
+
+        self.notifier.notify(
+            type,
+            msg,
+        )
 
     def display_save_settings_button(self):
         self.save_button = ctk.CTkButton(
@@ -992,6 +1049,10 @@ class NumericInput(ctk.CTkEntry):
 
     def on_entry_change(self):
         data = self.variable.get()
+
+        if data == "" or data == "-":
+            return
+
         can_have_decimals = (
             data.count(".") <= 1 if self.allow_float else data.count(".") == 0
         )
@@ -1001,7 +1062,7 @@ class NumericInput(ctk.CTkEntry):
                 self.variable.set(data[:-1])
                 return
 
-        if self.onchange and data != "":
+        if self.onchange:
             self.onchange(float(self.variable.get()))
 
     def get_value(self):
@@ -1010,8 +1071,8 @@ class NumericInput(ctk.CTkEntry):
 
         return int(self.variable.get())
 
-    def get_state(self) -> ParamConfigurationState:
-        state = ParamConfigurationState()
+    def get_state(self) -> FormState:
+        state = FormState(is_valid=False)
         value = self.variable.get()
 
         k = None

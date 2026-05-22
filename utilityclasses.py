@@ -28,8 +28,8 @@ class Finger(StrEnum):
 
 
 @dataclass
-class ParamConfigurationState:
-    is_valid: bool = False
+class FormState:
+    is_valid: bool = True
     error_message: str | None = None
 
 
