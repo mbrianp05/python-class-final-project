@@ -20,6 +20,9 @@ name_max_len = 17
 
 
 def shorten_middle(str: str, max: int) -> str:
+    if len(str) <= max:
+        return str
+
     ends = int(max / 2) + max % 2
 
     return str[:ends] + "..." + str[-ends:]

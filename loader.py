@@ -43,4 +43,18 @@ def get_icons(scale: int = 25):
         "hand-2-darker": tksvg.SvgImage(
             file="./icons/hand-2-darker.svg", scaletoheight=scale
         ),
+        "screenshot": tksvg.SvgImage(
+            file="./icons/screenshot.svg", scaletoheight=scale
+        ),
+        "open_file": tksvg.SvgImage(file="./icons/open-file.svg", scaletoheight=scale),
+        "open_folder": tksvg.SvgImage(
+            file="./icons/open-folder.svg", scaletoheight=scale
+        ),
+        "run_program": tksvg.SvgImage(
+            file="./icons/run-program.svg", scaletoheight=scale
+        ),
+        "set_volume": tksvg.SvgImage(
+            file="./icons/set-volume.svg", scaletoheight=scale
+        ),
+        "set_wifi": tksvg.SvgImage(file="./icons/set-wifi.svg", scaletoheight=scale),
     }

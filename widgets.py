@@ -17,6 +17,7 @@ from utilityclasses import Action, Finger, FormState, ParamType
 from utils import (
     get_action_from_repr,
     get_hand_profile_from_repr,
+    get_or_default,
     get_repr_for_action,
     get_repr_for_hand_profile,
     is_valid_file,
@@ -88,13 +89,27 @@ class Sidebar(CTkFrame):
         self.scrollable_frame.grid(row=1, column=0, padx=0, pady=0, sticky="ns")
         self.display_gestures_list()
 
+    def _get_icon(self, gesture: Gesture):
+        icons = loader.get_icons()
+
+        action_icon_dict = {
+            Action.TAKE_SCREENSHOT: icons["screenshot"],
+            Action.OPEN_FILE: icons["open_file"],
+            Action.OPEN_FOLDER: icons["open_folder"],
+            Action.RUN_PROGRAM: icons["run_program"],
+            Action.SET_WIFI_STATE: icons["set_wifi"],
+            Action.SET_VOLUME: icons["set_volume"],
+        }
+
+        return get_or_default(action_icon_dict, gesture.effect, None)
+
     def display_gestures_list(self):
         for i, gesture in enumerate(self.gestures):
             item = ActivationFeedbackLabel(
                 self.scrollable_frame,
                 text=shorten_gesture_name(gesture.name),
                 font=loader.get_fonts()["bold"],
-                image=loader.get_icons()["generic-gesture"],
+                image=self._get_icon(gesture),
                 transition=HighlightTransition(
                     fg_color="#3A8CFF", text_color="#fff", duration=500, pulses=2
                 ),
