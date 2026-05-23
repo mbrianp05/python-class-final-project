@@ -1,29 +1,3 @@
-"""
-param_picker.py
----------------
-Widget ParamPicker refactorizado con arquitectura modular y escalable.
-
-Arquitectura:
-  ┌─────────────────────────────────────────────┐
-  │  ParamPicker  (contenedor / orquestador)    │
-  │  ─────────────────────────────────────────  │
-  │  Mantiene un registro de sub-pickers y      │
-  │  muestra sólo el que corresponde al         │
-  │  ParamType activo.                          │
-  │                                             │
-  │  ┌──────────────┐  ┌──────────────────────┐ │
-  │  │ BinaryPicker │  │   NumericPicker       │ │
-  │  └──────────────┘  └──────────────────────┘ │
-  │  ┌──────────────┐  ┌──────────────────────┐ │
-  │  │  FilePicker  │  │   FolderPicker        │ │
-  │  └──────────────┘  └──────────────────────┘ │
-  └─────────────────────────────────────────────┘
-
-Para añadir un nuevo tipo de parámetro basta con:
-  1. Crear una subclase de BaseParamPanel.
-  2. Registrarla en ParamPicker._register_panels().
-"""
-
 from __future__ import annotations
 
 import abc
@@ -71,19 +45,6 @@ _PATH_MAX_LEN = 45
 
 
 class BaseParamPanel(ctk.CTkFrame, abc.ABC):
-    """
-    Clase base para todos los sub-pickers de ParamPicker.
-
-    Subclases deben implementar:
-      • stands_for  → ParamType que representan
-      • adjust_value(value) → carga un valor inicial en los widgets
-      • get_value()  → devuelve el valor actual (tipado)
-      • get_state()  → devuelve un FormState con validación
-
-    La apariencia base (fondo transparente, ancho/alto) ya viene
-    configurada aquí para evitar repetición.
-    """
-
     stands_for: ParamType  # declarado en cada subclase
 
     def __init__(self, master: Any, **kwargs: Any) -> None:
