@@ -2,7 +2,7 @@ import os
 import sys
 import warnings
 from datetime import datetime
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from typing import Any, Dict
 
 from gesture import Gesture, GestureData, HandProfile
@@ -51,6 +51,14 @@ def is_valid_path(path: str) -> bool:
 
 def is_valid_file(filepath: str) -> bool:
     return os.path.exists(filepath) and not os.path.isdir(filepath)
+
+
+def messagebox_info(title: str, message: str):
+    messagebox.showinfo(title, message)
+
+
+def messagebox_error(title: str, message: str):
+    messagebox.showerror(title, message)
 
 
 # LA PALETA DE COLORES DE LA APP

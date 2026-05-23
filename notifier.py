@@ -1,30 +1,3 @@
-"""
-notifier.py
------------
-Notificador global de la aplicación.
-
-Uso rápido
-----------
-    # En la ventana raíz (una sola vez):
-    Notifier.init(root_window)
-
-    # Desde cualquier widget, en cualquier parte de la app:
-    Notifier.get().notify(MessageType.SUCCESS, "Gesto guardado")
-    Notifier.get().notify(MessageType.ERROR,   "Algo salió mal")
-    Notifier.get().notify(MessageType.INFO,    "Información")
-
-Diseño
-------
-• Singleton: una sola instancia vive atada a la ventana raíz.
-• El _Toast es hijo directo de root y se crea DESPUÉS de que
-  Notifier.init() es llamado. En main.py, init() se llama antes
-  de set_views(), por lo que el toast nace ANTES que las vistas.
-  Para compensar, cada vez que se muestra se llama lift() sobre
-  el toast para subirlo por encima de los frames de las vistas.
-• Cola de mensajes: si llega uno nuevo antes de que expire el actual,
-  se encola y se muestra en secuencia (sin solapamiento).
-"""
-
 from __future__ import annotations
 
 from collections import deque

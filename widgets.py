@@ -11,7 +11,6 @@ from PIL import Image
 import loader
 from actions import get_actions_parameter_type
 from gesture import Gesture, GestureRecognition, HandProfile
-from notifier import Notifier
 from parampicker import ParamPicker
 from services import fetch_gestures, update_gesture
 from uiclasses import HighlightTransition, MessageType, MouseEventsImagesPack, View
@@ -22,6 +21,8 @@ from utils import (
     get_or_default,
     get_repr_for_action,
     get_repr_for_hand_profile,
+    messagebox_error,
+    messagebox_info,
     shorten_gesture_name,
 )
 
@@ -678,8 +679,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
             inner_state = self._inner_state
             outer_state = self.param_picker.get_state()
 
-            print(inner_state, outer_state)
-
             if inner_state.is_valid and outer_state.is_valid:
                 self.current_gesture.param = self.param_picker.get_value()
 
@@ -698,7 +697,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
         outer_state = self.param_picker.get_state()
 
         state = self._inner_state.is_valid and outer_state.is_valid
-
         type = MessageType.SUCCESS if state else MessageType.ERROR
 
         msg = "Gesto guardado correctamente"
@@ -708,7 +706,12 @@ class SettingsForm(ctk.CTkScrollableFrame):
         elif not outer_state.is_valid:
             msg = outer_state.error_message
 
-        Notifier.get().notify(type, msg or "Hello")
+        if type == MessageType.SUCCESS:
+            messagebox_info("Éxito", "Gesto guardado exitosamente")
+        else:
+            messagebox_error("Error", msg)
+
+        # Notifier.get().notify(type, msg or "Hello")
 
     def display_save_settings_button(self):
         self.save_button = ctk.CTkButton(
