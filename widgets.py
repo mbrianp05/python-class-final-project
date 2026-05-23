@@ -29,7 +29,7 @@ from utils import (
 
 class Sidebar(CTkFrame):
     def __init__(self, master, controller):
-        super().__init__(master, fg_color="transparent", width=230)
+        super().__init__(master, fg_color="transparent", width=500)
         self.gestures = fetch_gestures()
 
         self.controller = controller
@@ -709,7 +709,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         if type == MessageType.SUCCESS:
             messagebox_info("Éxito", "Gesto guardado exitosamente")
         else:
-            messagebox_error("Error", msg)
+            messagebox_error("Error", msg or "")
 
         # Notifier.get().notify(type, msg or "Hello")
 
