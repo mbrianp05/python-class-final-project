@@ -95,59 +95,80 @@ class GestureRecognition:
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame_rgb)
         detection_result = self.detector.detect(mp_image)
 
-        hands_info = []
+        if not detection_result.hand_landmarks:
+            return None
+
         h, w, _ = frame.shape
-        temp = 0
 
-        if detection_result.hand_landmarks:
-            for idx, (hand_landmarks, handedness) in enumerate(
-                zip(detection_result.hand_landmarks, detection_result.handedness)
-            ):
-                # Obtener tipo de mano
-                hand_type = handedness[0].category_name
+        # Acumula la info de cada mano indexada por tipo
+        # "Left" → índice 0, "Right" → índice 1
+        detected: dict[str, dict] = {}
 
-                # Convertir landmarks a coordenadas
-                landmarks = []
-                for lm in hand_landmarks:
-                    landmarks.append((lm.x * w, lm.y * h))
+        for hand_landmarks, handedness in zip(
+            detection_result.hand_landmarks, detection_result.handedness
+        ):
+            hand_type = handedness[0].category_name  # "Left" o "Right"
 
-                # Contar dedos levantados
-                fingers_binary = self._count_fingers_up(landmarks, hand_type)
-                temp = sum(fingers_binary)
+            landmarks = [(lm.x * w, lm.y * h) for lm in hand_landmarks]
 
-                # Obtener nombres de dedos levantados
-                fingers_up_names = [
-                    self.finger_names[i]
-                    for i, is_up in enumerate(fingers_binary)
-                    if is_up == 1
-                ]
+            fingers_binary = self._count_fingers_up(landmarks, hand_type)
+            fingers_up: List[Finger] = [
+                Finger(self.finger_names[i])
+                for i, is_up in enumerate(fingers_binary)
+                if is_up == 1
+            ]
+            profile = self._detect_profile(landmarks)
 
-                hands_info.append(
-                    {
-                        "type": hand_type,
-                        "fingers": fingers_up_names,
-                        # "fingers_count": sum(fingers_binary),
-                        # "fingers_binary": fingers_binary,
-                    }
-                )
+            detected[hand_type] = {
+                "fingers": fingers_up,
+                "profile": profile,
+            }
 
-        if len(hands_info) + temp != 0:
-            print({"num_hands": len(hands_info), "hands": hands_info})
-            # HAY QUE VER CUAL ES LA MANO QUE SE VEN
-            # LA PRIMERA ES LA IZQUIERDA Y LA SEGUNDA LA DERECHA
-            hands = (False, False)
+        if not detected:
+            return None
 
-            if len(hands_info) == 1:
-                hands = (True, False)
+        left = detected.get("Left", {"fingers": [], "profile": None})
+        right = detected.get("Right", {"fingers": [], "profile": None})
 
-            if len(hands_info) == 2:
-                hands = (True, True)
+        return GestureData(
+            hands=(
+                "Left" in detected,
+                "Right" in detected,
+            ),
+            visibleFingers=(
+                left["fingers"],
+                right["fingers"],
+            ),
+            profile=(
+                left["profile"],
+                right["profile"],
+            ),
+        )
 
-            return GestureData(
-                hands=hands,
-                visibleFingers=(hands_info[0]["fingers"], []),
-                profile=(None, None),
-            )
+    def _detect_profile(self, landmarks) -> HandProfile | None:
+        """
+        Determina el perfil de la mano a partir de la posición relativa
+        de los landmarks de la palma.
+
+        HandProfile.FRONT → los nudillos apuntan hacia la cámara
+                            (la base del dedo índice está más cerca que la muñeca)
+        HandProfile.PALM  → la palma mira hacia la cámara
+                            (la muñeca está más cerca que los nudillos)
+        None              → no se puede determinar con confianza
+        """
+        # Muñeca (0), base índice (5), base meñique (17)
+        wrist = landmarks[0]
+        index_base = landmarks[5]
+        pinky_base = landmarks[17]
+
+        # Usamos la coordenada Y: menor Y = más cerca de la parte superior del frame
+        # La diferencia entre la muñeca y la línea de nudillos indica la orientación
+        knuckle_y = (index_base[1] + pinky_base[1]) / 2
+
+        if knuckle_y < wrist[1]:
+            return HandProfile.FRONT
+        elif knuckle_y > wrist[1]:
+            return HandProfile.PALM
 
         return None
 
