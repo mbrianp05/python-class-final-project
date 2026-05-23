@@ -1,0 +1,472 @@
+"""
+param_picker.py
+---------------
+Widget ParamPicker refactorizado con arquitectura modular y escalable.
+
+Arquitectura:
+  ┌─────────────────────────────────────────────┐
+  │  ParamPicker  (contenedor / orquestador)    │
+  │  ─────────────────────────────────────────  │
+  │  Mantiene un registro de sub-pickers y      │
+  │  muestra sólo el que corresponde al         │
+  │  ParamType activo.                          │
+  │                                             │
+  │  ┌──────────────┐  ┌──────────────────────┐ │
+  │  │ BinaryPicker │  │   NumericPicker       │ │
+  │  └──────────────┘  └──────────────────────┘ │
+  │  ┌──────────────┐  ┌──────────────────────┐ │
+  │  │  FilePicker  │  │   FolderPicker        │ │
+  │  └──────────────┘  └──────────────────────┘ │
+  └─────────────────────────────────────────────┘
+
+Para añadir un nuevo tipo de parámetro basta con:
+  1. Crear una subclase de BaseParamPanel.
+  2. Registrarla en ParamPicker._register_panels().
+"""
+
+from __future__ import annotations
+
+import abc
+from typing import Any
+
+import customtkinter as ctk
+
+import loader
+from numeric_input import NumericInput
+from utilityclasses import FormState, ParamType
+from utils import (
+    is_valid_file,
+    is_valid_path,
+    pick_file,
+    pick_folder,
+    shorten_middle,
+)
+
+# ---------------------------------------------------------------------------
+# Paleta de colores y constantes de diseño
+# ---------------------------------------------------------------------------
+
+_COLORS = {
+    "bg": "transparent",
+    "accent": "#3A8CFF",
+    "error": "#FF5C5C",
+    "success": "#4CAF93",
+    "text": "#DCE4EE",
+    "subtext": "#8A95A3",
+    "border": "#2D3748",
+    "input_bg": "#1A2233",
+    "button_bg": "#223355",
+    "button_hover": "#3A8CFF",
+}
+
+_RADIUS = 8
+_ENTRY_HEIGHT = 34
+_BUTTON_HEIGHT = 34
+_PATH_MAX_LEN = 45
+
+
+# ---------------------------------------------------------------------------
+# Clase base – contrato que todo sub-picker debe cumplir
+# ---------------------------------------------------------------------------
+
+
+class BaseParamPanel(ctk.CTkFrame, abc.ABC):
+    """
+    Clase base para todos los sub-pickers de ParamPicker.
+
+    Subclases deben implementar:
+      • stands_for  → ParamType que representan
+      • adjust_value(value) → carga un valor inicial en los widgets
+      • get_value()  → devuelve el valor actual (tipado)
+      • get_state()  → devuelve un FormState con validación
+
+    La apariencia base (fondo transparente, ancho/alto) ya viene
+    configurada aquí para evitar repetición.
+    """
+
+    stands_for: ParamType  # declarado en cada subclase
+
+    def __init__(self, master: Any, **kwargs: Any) -> None:
+        super().__init__(
+            master,
+            fg_color=_COLORS["bg"],
+            height=90,
+            width=400,
+            **kwargs,
+        )
+        font_map = loader.get_fonts()
+        self.font_regular = font_map["regular"]
+        self.font_bold = font_map["bold"]
+        self._build()
+
+    # -- API pública --------------------------------------------------------
+
+    @abc.abstractmethod
+    def _build(self) -> None:
+        """Construye los widgets internos."""
+
+    @abc.abstractmethod
+    def adjust_value(self, value: Any) -> None:
+        """Carga *value* en el widget (puede ser None)."""
+
+    @abc.abstractmethod
+    def get_value(self) -> Any:
+        """Devuelve el valor actual del widget."""
+
+    @abc.abstractmethod
+    def get_state(self) -> FormState:
+        """Valida el valor actual y devuelve un FormState."""
+
+
+# ---------------------------------------------------------------------------
+# Sub-picker: BINARY  (Activar / Desactivar)
+# ---------------------------------------------------------------------------
+
+
+class BinaryParamPanel(BaseParamPanel):
+    stands_for = ParamType.BINARY
+
+    def _build(self) -> None:
+        self.columnconfigure((0, 1), weight=1)
+        self._var = ctk.IntVar(value=1)
+
+        radio_cfg = dict(
+            variable=self._var,
+            font=self.font_regular,
+            fg_color=_COLORS["accent"],
+        )
+
+        ctk.CTkRadioButton(self, text="Activar", value=1, **radio_cfg).grid(  # type: ignore
+            row=0, column=0, sticky="w", padx=(10, 0)
+        )
+
+        ctk.CTkRadioButton(self, text="Desactivar", value=0, **radio_cfg).grid(  # type: ignore
+            row=0, column=1, sticky="w", padx=(10, 0)
+        )
+
+    def adjust_value(self, value: Any) -> None:
+        self._var.set(int(value) if value is not None else 1)
+
+    def get_value(self) -> bool:
+        return bool(self._var.get())
+
+    def get_state(self) -> FormState:
+        return FormState(is_valid=True)
+
+
+# ---------------------------------------------------------------------------
+# Sub-picker: NUMERIC  (entrada numérica validada)
+# ---------------------------------------------------------------------------
+
+
+class NumericParamPanel(BaseParamPanel):
+    stands_for = ParamType.NUMERIC
+
+    def _build(self) -> None:
+        self.columnconfigure(0, weight=1)
+
+        self._entry = NumericInput(
+            self,
+            font=self.font_regular,
+            height=_ENTRY_HEIGHT,
+            width=200,
+            min=-1,
+            max=1,
+            allow_float=True,
+            allow_negatives=True,
+            onchange=self._on_change,
+        )
+        self._entry.grid(row=0, column=0, sticky="w", padx=0)
+
+        self._error_label = ctk.CTkLabel(
+            self,
+            text="",
+            font=self.font_regular,
+            text_color=_COLORS["error"],
+            fg_color=_COLORS["bg"],
+        )
+        self._error_label.grid(row=1, column=0, sticky="w", padx=0)
+
+    def _on_change(self, _value: float) -> None:
+        state = self._entry.get_state()
+        self._error_label.configure(
+            text="" if state.is_valid else (state.error_message or "")
+        )
+
+    def adjust_value(self, value: Any) -> None:
+        self._entry.delete(0, "end")
+        self._entry.insert(0, str(value) if value is not None else "")
+
+    def get_value(self) -> float | None:
+        try:
+            return self._entry.get_value()
+        except (ValueError, TypeError):
+            return None
+
+    def get_state(self) -> FormState:
+        return self._entry.get_state()
+
+
+# ---------------------------------------------------------------------------
+# Sub-picker: FILE_PATH  (selector de archivo)
+# ---------------------------------------------------------------------------
+
+
+class FileParamPanel(BaseParamPanel):
+    stands_for = ParamType.FILE_PATH
+
+    def _build(self) -> None:
+        self.columnconfigure(0, weight=1)
+
+        # Fila 0: ruta + botón
+        self._path_label = ctk.CTkLabel(
+            self,
+            text="Sin archivo seleccionado",
+            font=self.font_regular,
+            text_color=_COLORS["subtext"],
+            fg_color=_COLORS["bg"],
+            anchor="w",
+            wraplength=260,
+        )
+        self._path_label.grid(row=0, column=0, sticky="w", padx=(10, 8))
+
+        self._browse_btn = ctk.CTkButton(
+            self,
+            text="Buscar archivo",
+            font=self.font_regular,
+            height=_BUTTON_HEIGHT,
+            fg_color=_COLORS["button_bg"],
+            hover_color=_COLORS["button_hover"],
+            corner_radius=_RADIUS,
+            command=self._on_browse,
+        )
+        self._browse_btn.grid(row=0, column=1, padx=(0, 10))
+
+        # Fila 1: mensaje de error
+        self._error_label = ctk.CTkLabel(
+            self,
+            text="",
+            font=self.font_regular,
+            text_color=_COLORS["error"],
+            fg_color=_COLORS["bg"],
+            anchor="w",
+        )
+        self._error_label.grid(row=1, column=0, columnspan=2, sticky="w", padx=12)
+
+        self._value: str | None = None
+        self._state = FormState(is_valid=False, error_message="Sin archivo")
+
+    def _on_browse(self) -> None:
+        path = pick_file()
+        if path:
+            self.adjust_value(path)
+
+    def adjust_value(self, value: str | None) -> None:
+        self._value = value
+
+        if value is None:
+            self._path_label.configure(
+                text="Sin archivo seleccionado", text_color=_COLORS["subtext"]
+            )
+            self._state = FormState(
+                is_valid=False, error_message="No se ha elegido el archivo"
+            )
+            self._error_label.configure(text="")
+            return
+
+        ok = is_valid_file(value)
+        self._state = FormState(
+            is_valid=ok,
+            error_message=None if ok else "El archivo no fue encontrado",
+        )
+        self._path_label.configure(
+            text=shorten_middle(value, _PATH_MAX_LEN),
+            text_color=_COLORS["text"] if ok else _COLORS["error"],
+        )
+        self._error_label.configure(
+            text="" if ok else (self._state.error_message or "")
+        )
+
+    def get_value(self) -> str | None:
+        return self._value
+
+    def get_state(self) -> FormState:
+        return self._state
+
+
+# ---------------------------------------------------------------------------
+# Sub-picker: FOLDER_PATH  (selector de carpeta)
+# ---------------------------------------------------------------------------
+
+
+class FolderParamPanel(BaseParamPanel):
+    stands_for = ParamType.FOLDER_PATH
+
+    def _build(self) -> None:
+        self.columnconfigure(0, weight=1)
+
+        self._path_label = ctk.CTkLabel(
+            self,
+            text="Sin carpeta seleccionada",
+            font=self.font_regular,
+            text_color=_COLORS["subtext"],
+            fg_color=_COLORS["bg"],
+            anchor="w",
+            wraplength=260,
+        )
+        self._path_label.grid(row=0, column=0, sticky="w", padx=(10, 8))
+
+        self._browse_btn = ctk.CTkButton(
+            self,
+            text="Buscar carpeta",
+            font=self.font_regular,
+            height=_BUTTON_HEIGHT,
+            fg_color=_COLORS["button_bg"],
+            hover_color=_COLORS["button_hover"],
+            corner_radius=_RADIUS,
+            command=self._on_browse,
+        )
+        self._browse_btn.grid(row=0, column=1, padx=(0, 10))
+
+        self._error_label = ctk.CTkLabel(
+            self,
+            text="",
+            font=self.font_regular,
+            text_color=_COLORS["error"],
+            fg_color=_COLORS["bg"],
+            anchor="w",
+        )
+        self._error_label.grid(row=1, column=0, columnspan=2, sticky="w", padx=12)
+
+        self._value: str | None = None
+        self._state = FormState(is_valid=False, error_message="Sin carpeta")
+
+    def _on_browse(self) -> None:
+        path = pick_folder()
+        if path:
+            self.adjust_value(path)
+
+    def adjust_value(self, value: str | None) -> None:
+        self._value = value
+
+        if value is None:
+            self._path_label.configure(
+                text="Sin carpeta seleccionada", text_color=_COLORS["subtext"]
+            )
+            self._state = FormState(
+                is_valid=False, error_message="No se ha proporcionado ninguna carpeta"
+            )
+            self._error_label.configure(text="")
+            return
+
+        ok = is_valid_path(value)
+        self._state = FormState(
+            is_valid=ok,
+            error_message=None if ok else "La carpeta no fue encontrada",
+        )
+        self._path_label.configure(
+            text=shorten_middle(value, _PATH_MAX_LEN),
+            text_color=_COLORS["text"] if ok else _COLORS["error"],
+        )
+        self._error_label.configure(
+            text="" if ok else (self._state.error_message or "")
+        )
+
+    def get_value(self) -> str | None:
+        return self._value
+
+    def get_state(self) -> FormState:
+        return self._state
+
+
+# ---------------------------------------------------------------------------
+# Orquestador: ParamPicker
+# ---------------------------------------------------------------------------
+
+
+class ParamPicker(ctk.CTkFrame):
+    """
+    Contenedor principal que muestra el sub-picker adecuado según
+    el ParamType activo.
+
+    Uso:
+        picker = ParamPicker(master, paramtype=ParamType.NUMERIC, initial_value=0.5)
+        picker.get_value()   # → 0.5
+        picker.get_state()   # → FormState(is_valid=True)
+
+        # Cambiar de tipo en caliente:
+        picker.set_param_type(ParamType.FILE_PATH)
+
+    Para registrar un nuevo tipo de parámetro:
+        1. Crea una subclase de BaseParamPanel con `stands_for = ParamType.NUEVO`.
+        2. Añádela en _register_panels().
+    """
+
+    def __init__(
+        self,
+        master: Any,
+        paramtype: ParamType | None = ParamType.NUMERIC,
+        initial_value: Any = None,
+    ) -> None:
+        super().__init__(master, fg_color=_COLORS["bg"])
+
+        # Diccionario { ParamType → instancia de BaseParamPanel }
+        self._panels: dict[ParamType, BaseParamPanel] = {}
+        self._active_type: ParamType | None = None
+
+        self._register_panels()
+        self.set_param_type(paramtype, initial_value)
+
+    # -- Registro de paneles ------------------------------------------------
+
+    def _register_panels(self) -> None:
+        """
+        Instancia y registra todos los sub-pickers disponibles.
+        Para añadir uno nuevo, agrégalo aquí.
+        """
+        panel_classes: list[type[BaseParamPanel]] = [
+            BinaryParamPanel,
+            NumericParamPanel,
+            FileParamPanel,
+            FolderParamPanel,
+        ]
+
+        for cls in panel_classes:
+            panel = cls(self)
+            self._panels[cls.stands_for] = panel
+
+    # -- API pública --------------------------------------------------------
+
+    def set_param_type(
+        self, paramtype: ParamType | None, initial_value: Any = None
+    ) -> None:
+        """Activa el sub-picker correspondiente a *paramtype*."""
+        self._active_type = paramtype
+
+        for ptype, panel in self._panels.items():
+            panel.pack_forget()
+
+        if paramtype is None:
+            return
+
+        active_panel = self._panels.get(paramtype)
+        if active_panel is None:
+            raise KeyError(f"No hay panel registrado para ParamType.{paramtype}")
+
+        active_panel.adjust_value(initial_value)
+        active_panel.pack(fill="both", expand=True)
+
+    def get_value(self) -> Any:
+        """Devuelve el valor del panel activo, o None si no hay ninguno."""
+        if self._active_type is None:
+            return None
+        return self._panels[self._active_type].get_value()
+
+    def get_state(self) -> FormState:
+        """Devuelve el FormState del panel activo."""
+        if self._active_type is None:
+            return FormState(
+                is_valid=False,
+                error_message="No se ha proporcionado el valor del parámetro",
+            )
+        return self._panels[self._active_type].get_state()

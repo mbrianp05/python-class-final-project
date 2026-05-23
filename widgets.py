@@ -11,6 +11,8 @@ from PIL import Image
 import loader
 from actions import get_actions_parameter_type
 from gesture import Gesture, GestureRecognition, HandProfile
+from notifier import Notifier
+from parampicker import ParamPicker
 from services import fetch_gestures, update_gesture
 from uiclasses import HighlightTransition, MessageType, MouseEventsImagesPack, View
 from utilityclasses import Action, Finger, FormState, ParamType
@@ -20,12 +22,7 @@ from utils import (
     get_or_default,
     get_repr_for_action,
     get_repr_for_hand_profile,
-    is_valid_file,
-    is_valid_path,
-    pick_file,
-    pick_folder,
     shorten_gesture_name,
-    shorten_middle,
 )
 
 
@@ -204,233 +201,9 @@ class SettingsHeader(ctk.CTkFrame):
         self.nav_button.grid(row=0, column=0, padx=10, pady=10)
 
 
-class ParamPicker(ctk.CTkFrame):
-    PATH_MAX_LEN = 45
-
-    def __init__(
-        self,
-        master,
-        paramtype: ParamType | None = ParamType.NUMERIC,
-        initial_value=None,
-    ):
-        super().__init__(master)
-        self._value = None
-        self.font = loader.get_fonts()["regular"]
-
-        self.frames = []
-        self._state: FormState = FormState(
-            is_valid=False, error_message="Estado inicial"
-        )
-
-        self.set_layout()
-        self.display_file_picker()
-        self.display_folder_picker()
-        self.display_numeric_param()
-        self.display_binary_param()
-
-        for frame in self.frames:
-            frame.configure(height=100, width=400)
-            frame.pack(fill="both", expand=True)
-
-        self.set_param_type(paramtype, initial_value)
-
-    def get_value(self):
-        return self._value
-
-    def get_state(self) -> FormState:
-        if self._value is None and self.paramtype is None:
-            return FormState(
-                is_valid=False,
-                error_message="No se ha proporcionado el valor del parámetro",
-            )
-
-        return self._state
-
-    def set_param_type(self, paramtype: ParamType | None, initial_value=None):
-        self.paramtype = paramtype
-        self._value = initial_value
-        self.show_current_frame(initial_value)
-
-    def show_current_frame(self, initial_value=None):
-        current_frame = None
-
-        for frame in self.frames:
-            frame.pack_forget()
-
-            if getattr(frame, "stands_for", None) == self.paramtype:
-                current_frame = frame
-
-        if self.paramtype is None:
-            self._value = None
-            return
-
-        if current_frame is None:
-            return
-
-        current_frame.pack(fill="both", expand=True)
-        current_frame.adjust_value(initial_value)
-
-    def set_layout(self):
-        pass
-
-    def change_binary_value(self):
-        self._state = FormState(is_valid=True)
-        self._value = bool(self.binary_value.get())
-
-    def display_binary_param(self):
-        frame = ctk.CTkFrame(self, fg_color="transparent")
-        frame.columnconfigure((0, 1), weight=1)
-        setattr(frame, "stands_for", ParamType.BINARY)
-
-        self.frames.append(frame)
-        self.binary_value = ctk.IntVar(value=1)
-
-        self.enable = ctk.CTkRadioButton(
-            frame,
-            text="Activar",
-            variable=self.binary_value,
-            font=self.font,
-            command=self.change_binary_value,
-            value=1,
-        )
-        self.enable.grid(row=0, column=0)
-        self.disable = ctk.CTkRadioButton(
-            frame,
-            text="Desactivar",
-            variable=self.binary_value,
-            font=self.font,
-            command=self.change_binary_value,
-            value=0,
-        )
-        self.disable.grid(row=0, column=1)
-
-        setattr(frame, "adjust_value", lambda v: self.binary_value.set(v if v else 1))
-
-    def change_numeric_value(self, value):
-        self._value = value
-        self._state = self.numeric_entry.get_state()
-
-    def display_numeric_param(self):
-        frame = ctk.CTkFrame(self, fg_color="transparent")
-        setattr(frame, "stands_for", ParamType.NUMERIC)
-
-        self.frames.append(frame)
-
-        self.numeric_entry = NumericInput(
-            frame, font=self.font, min=-1, max=1, onchange=self.change_numeric_value
-        )
-        self.numeric_entry.grid(row=0, column=0)
-
-        setattr(frame, "adjust_value", lambda v: self.replace_contents(v))
-
-    def replace_contents(self, new_value: int | None):
-        self.numeric_entry.delete(0, "end")
-        self.numeric_entry.insert(0, new_value if new_value is not None else "")
-
-        if not new_value:
-            self._value = 0
-        else:
-            self._value = float(new_value)
-
-    def display_file_picker(self):
-        frame = ctk.CTkFrame(self, fg_color="transparent")
-        setattr(frame, "stands_for", ParamType.FILE_PATH)
-
-        self.frames.append(frame)
-
-        self.current_file_label = ctk.CTkLabel(frame, font=self.font)
-        self.current_file_label.grid(row=0, column=0, padx=(0, 10), sticky="w")
-
-        self.browser_button = ctk.CTkButton(
-            frame,
-            text="Buscar archivo",
-            font=self.font,
-            height=31,
-            command=self.change_file_picker_value,
-        )
-        self.browser_button.grid(row=0, column=1)
-        self._state = FormState(is_valid=True)
-
-        setattr(frame, "adjust_value", lambda v: self.change_file_value(v))
-
-    def change_file_value(self, filepath: str | None):
-        if filepath is None:
-            self.current_file_label.configure(text="")
-            self._state = FormState(
-                is_valid=False, error_message="No se ha elegido el archivo"
-            )
-            self._value = None
-
-            return
-
-        is_valid = is_valid_file(filepath)
-        msg = None if is_valid else "El archivo no fue encontrado"
-
-        self._state = FormState(is_valid=is_valid, error_message=msg)
-        self._value = filepath
-
-        self.current_file_label.configure(
-            text=shorten_middle(filepath, self.PATH_MAX_LEN)
-        )
-
-    def change_file_picker_value(self):
-        file = pick_file()
-
-        if file:
-            self.change_file_value(file)
-
-    def display_folder_picker(self):
-        frame = ctk.CTkFrame(self, fg_color="transparent")
-        setattr(frame, "stands_for", ParamType.FOLDER_PATH)
-
-        self.frames.append(frame)
-
-        self.current_folder_label = ctk.CTkLabel(frame, font=self.font)
-        self.current_folder_label.grid(row=0, column=0, padx=(0, 10), sticky="w")
-
-        self.browser_button = ctk.CTkButton(
-            frame,
-            text="Buscar carpeta",
-            font=self.font,
-            width=100,
-            height=31,
-            command=self.change_folder_picker_value,
-        )
-        self.browser_button.grid(row=0, column=1)
-        setattr(frame, "adjust_value", lambda v: self.change_folder_value(v))
-
-    def change_folder_value(self, folderpath: str | None):
-        if folderpath is None:
-            self.current_folder_label.configure(text="")
-            self._state = FormState(
-                is_valid=False, error_message="No se ha proporcionado ninguna carpeta"
-            )
-            self._value = None
-
-            return
-
-        is_valid = is_valid_path(folderpath)
-        msg = None if is_valid else "La carpeta no fue encontrada"
-
-        self._state = FormState(is_valid=is_valid, error_message=msg)
-        self._value = folderpath
-
-        self.current_folder_label.configure(
-            text=shorten_middle(folderpath, self.PATH_MAX_LEN)
-        )
-
-    def change_folder_picker_value(self):
-        folder = pick_folder()
-
-        if folder:
-            self.change_folder_value(folder)
-
-
 class SettingsForm(ctk.CTkScrollableFrame):
-    def __init__(self, master, notifier=None):
+    def __init__(self, master):
         super().__init__(master)
-
-        self.notifier = notifier
 
         self.configure(fg_color="transparent")
         self.gestures = fetch_gestures()
@@ -905,6 +678,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
             inner_state = self._inner_state
             outer_state = self.param_picker.get_state()
 
+            print(inner_state, outer_state)
+
             if inner_state.is_valid and outer_state.is_valid:
                 self.current_gesture.param = self.param_picker.get_value()
 
@@ -920,9 +695,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
     # PENDIENTE DE IMPLEMENTACIÓN
     def feedback(self):
-        if self.notifier is None:
-            return
-
         outer_state = self.param_picker.get_state()
 
         state = self._inner_state.is_valid and outer_state.is_valid
@@ -936,10 +708,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         elif not outer_state.is_valid:
             msg = outer_state.error_message
 
-        self.notifier.notify(
-            type,
-            msg,
-        )
+        Notifier.get().notify(type, msg or "Hello")
 
     def display_save_settings_button(self):
         self.save_button = ctk.CTkButton(
@@ -1028,97 +797,6 @@ class RegularLabel(ctk.CTkLabel):
             font=loader.get_fonts(size)[variant],
             compound="center",
         )
-
-
-class NumericInput(ctk.CTkEntry):
-    def __init__(
-        self,
-        master,
-        min=None,
-        max=None,
-        allow_float=True,
-        allow_negatives=True,
-        width=100,
-        height=31,
-        font=None,
-        onchange=None,
-        **kwargs,
-    ):
-        super().__init__(master, width=width, height=height, font=font, **kwargs)
-        self.min = min
-        self.max = max
-        self.allow_float = allow_float
-        self.allow_negatives = allow_negatives
-
-        self.onchange = onchange
-
-        if not allow_negatives and min is not None:
-            raise ValueError(
-                "Min value cannot be assigned when negative valus are not allowed"
-            )
-
-        if not self.allow_negatives:
-            min = 0
-
-        self.variable = ctk.StringVar()
-        self.variable.trace_add("write", lambda *_: self.on_entry_change())
-        self.configure(textvariable=self.variable)
-
-    def on_entry_change(self):
-        data = self.variable.get()
-
-        if data == "" or data == "-":
-            return
-
-        can_have_decimals = (
-            data.count(".") <= 1 if self.allow_float else data.count(".") == 0
-        )
-
-        if data != "":
-            if not data.isdigit() and not can_have_decimals:
-                self.variable.set(data[:-1])
-                return
-
-        if self.onchange:
-            self.onchange(float(self.variable.get()))
-
-    def get_value(self):
-        if self.allow_float:
-            return float(self.variable.get())
-
-        return int(self.variable.get())
-
-    def get_state(self) -> FormState:
-        state = FormState(is_valid=False)
-        value = self.variable.get()
-
-        k = None
-
-        try:
-            k = float(value)
-        except ValueError:
-            state.error_message = "El valor introducido no es un número"
-
-            return state
-
-        if not self.allow_float:
-            state.error_message = "Solo se permite valores enteros"
-
-            return state
-
-        if self.min is not None and k < self.min:
-            state.error_message = f"El valor introducido debe ser mayor que {self.min}"
-
-            return state
-
-        if self.max is not None and k > self.max:
-            state.error_message = f"El valor introducido debe ser mayor que {self.max}"
-
-            return state
-
-        state.is_valid = True
-
-        return state
 
 
 # HAY QUE MEJORAR ESTO XD
