@@ -16,7 +16,6 @@ class App(ctk.CTk):
         super().__init__()
 
         self.title("Reconocimiento de gestos")
-
         self.views = {}
 
         Notifier.init(self)
