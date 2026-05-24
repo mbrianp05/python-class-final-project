@@ -404,12 +404,21 @@ class SettingsForm(ctk.CTkScrollableFrame):
         # SI UNA DE LAS MANOS SE DESACTIVAN QUITAR LOS DEDOS VISIBLES
         # DE ESA MANO
         left_hand_visible_fingers, right_hand_visible_fingers = settings.visibleFingers
+        new_visible_fingers = {
+            "left": left_hand_visible_fingers,
+            "right": right_hand_visible_fingers,
+        }
 
         if not is_left_hand_active:
-            settings.visibleFingers = ([], right_hand_visible_fingers)
+            new_visible_fingers["left"] = []
 
         if not is_right_hand_active:
-            settings.visibleFingers = (left_hand_visible_fingers, [])
+            new_visible_fingers["right"] = []
+
+        settings.visibleFingers = (
+            new_visible_fingers["left"],
+            new_visible_fingers["right"],
+        )
 
         #  ACTUALIZAR EL ACTION
         self.current_gesture.effect = self.get_selected_action()
@@ -465,7 +474,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 command=self.update_config,
                 font=loader.get_fonts()["regular"],
             )
-            ch.grid(row=1, column=i, pady=10)
+            ch.grid(row=1, column=i, pady=0)
             checkboxes.append(ch)
 
         (self.left_hand_activator, self.right_hand_activator, *_) = checkboxes
@@ -585,6 +594,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             )
 
         all_checkboxes = self.get_fingers_selector_checkboxes()
+        is_hand_active = [is_left_active, is_right_active]
 
         # ADJUST FINGERS
         for idx, ch in enumerate(all_checkboxes):
@@ -594,18 +604,14 @@ class SettingsForm(ctk.CTkScrollableFrame):
             hand_index = idx % 2
             hand_fingers = hands_fingers[hand_index]
 
-            for idx, is_active in enumerate((is_left_active, is_right_active)):
-                if hand_index == idx:
-                    if not is_active:
-                        ch.deselect()
-                        ch.configure(state=ctk.DISABLED)
-                    else:
-                        ch.configure(state=ctk.NORMAL)
-
-            if hand_fingers.count(getattr(ch, "stands_for")) == 1:
-                ch.select()
-            else:
+            if not is_hand_active[hand_index]:
                 ch.deselect()
+                ch.configure(state=ctk.DISABLED)
+            else:
+                if hand_fingers.count(getattr(ch, "stands_for")) == 1:
+                    ch.select()
+
+                ch.configure(state=ctk.NORMAL)
 
         # ADJUST ACTION
         self.adjust_current_gesture_effect()
