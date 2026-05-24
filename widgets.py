@@ -40,6 +40,7 @@ class Sidebar(CTkFrame):
         self.create_scrollbar_panel()
 
     def set_layout(self):
+        self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
 
     def init_fonts(self):
@@ -50,19 +51,17 @@ class Sidebar(CTkFrame):
 
     def create_header(self):
         self.header = ctk.CTkFrame(self, fg_color="transparent")
-        self.header.columnconfigure(0, weight=1)
-        self.header.grid(row=0, column=0, padx=20, sticky="we")
+        self.header.grid(row=0, column=0, padx=0, sticky="we")
 
         self.header_label = ctk.CTkLabel(
             self.header,
-            height=55,
+            height=50,
             text="Gestos",
             font=self.header_font,
             fg_color="transparent",
-            text_color="white",
             anchor="w",
         )
-        self.header_label.grid(row=0, column=0, sticky="we", padx=(10, 0))
+        self.header_label.grid(row=0, column=1, sticky="we", padx=15)
 
         icons = loader.get_icons()
 
@@ -76,7 +75,7 @@ class Sidebar(CTkFrame):
             images_pack=images_pack,
             command=lambda: self.controller.show(View.SETTINGS_VIEW),
         )
-        self.configure_gestures_label.grid(row=0, column=1, pady=(5, 0))
+        self.configure_gestures_label.grid(row=0, column=0, sticky="wsn")
 
     def create_scrollbar_panel(self):
         self.scrollable_frame = ctk.CTkScrollableFrame(
@@ -84,7 +83,8 @@ class Sidebar(CTkFrame):
             orientation="vertical",
             fg_color="transparent",
         )
-        self.scrollable_frame.grid(row=1, column=0, padx=0, pady=0, sticky="ns")
+        self.scrollable_frame.columnconfigure(0, weight=1)
+        self.scrollable_frame.grid(row=1, column=0, pady=0, sticky="nsew")
         self.display_gestures_list()
 
     def _get_icon(self, gesture: Gesture):
@@ -113,15 +113,13 @@ class Sidebar(CTkFrame):
                 ),
             )
 
-            item.grid(row=i, column=0, padx=(0, 0), pady=0, sticky="ew")
+            item.grid(row=i, column=0, sticky="we")
 
     def highlight_gesture(self, index: int = 0):
         labels = list(self.scrollable_frame.children.values())
 
-        if index < len(labels):  # type: ignore
-            labels[index].highlight()  # type: ignore
-        else:
-            raise IndexError(f"Index [{index}] out of bounds.")
+        if index < len(labels):
+            cast(ActivationFeedbackLabel, labels[index]).highlight()
 
 
 class Camera(ctk.CTkFrame):
@@ -185,8 +183,9 @@ class SettingsHeader(ctk.CTkFrame):
             text="Configurar gestos",
             font=loader.get_fonts()["title"],
             fg_color="transparent",
+            height=50,
         )
-        self.title_label.grid(row=0, column=1, padx=0, pady=10)
+        self.title_label.grid(row=0, column=1, padx=15)
 
     def display_go_back_button(self):
         icons = loader.get_icons(30)
@@ -199,7 +198,7 @@ class SettingsHeader(ctk.CTkFrame):
             images_pack=pack,
             command=lambda: self.controller.show(View.DETECTION_VIEW),  # type: ignore
         )
-        self.nav_button.grid(row=0, column=0, padx=10, pady=10)
+        self.nav_button.grid(row=0, column=0, sticky="wsn")
 
 
 class SettingsForm(ctk.CTkScrollableFrame):
@@ -759,7 +758,7 @@ class CustomButton(ImagesEffectLabel):
         command: Callable[[], Any] | None = None,
     ):
         super().__init__(master, text=text, images_pack=images_pack)
-        self.configure(cursor="hand2")
+        self.configure(cursor="hand2", fg_color="#555", width=46)
 
         self.command = command
         self.images_pack = images_pack
@@ -778,9 +777,11 @@ class CustomButton(ImagesEffectLabel):
 
     def on_leave(self, _):
         self.activate_image("noEvent")
+        self.configure(fg_color="#444")
 
     def on_enter(self, _):
         self.activate_image("mouseEnter")
+        self.configure(fg_color="#222")
 
 
 class RegularLabel(ctk.CTkLabel):
@@ -875,7 +876,6 @@ class ActivationFeedbackLabel(ctk.CTkLabel):
             fg_color="transparent",
             compound="left",
             anchor="w",
-            corner_radius=30,
             **kwargs,
         )
         self.transition = transition

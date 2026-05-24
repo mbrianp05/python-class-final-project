@@ -16,7 +16,7 @@ def verify_os() -> None:
         exit("Operating system not supported")
 
 
-name_max_len = 17
+name_max_len = 22
 
 
 def shorten_middle(str: str, max: int) -> str:
