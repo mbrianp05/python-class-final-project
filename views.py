@@ -1,11 +1,12 @@
 import customtkinter as ctk
 
+from utils import get_color_palette
 from widgets import Camera, SettingsForm, SettingsHeader, Sidebar
 
 
 class GestureDetectionView(ctk.CTkFrame):
     def __init__(self, master):
-        super().__init__(master)
+        super().__init__(master, fg_color=get_color_palette()["bg"])
 
         self.main = True
         self.set_layout()
@@ -35,7 +36,7 @@ class GestureDetectionView(ctk.CTkFrame):
 
 class ConfigureGesturesView(ctk.CTkFrame):
     def __init__(self, master):
-        super().__init__(master)
+        super().__init__(master, fg_color=get_color_palette()["bg"])
 
         self.set_layout()
         self.display_header()

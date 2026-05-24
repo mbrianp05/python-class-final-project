@@ -75,6 +75,7 @@ def get_color_palette():
         # Border & accent
         "border": "#334155",
         "accent": "#0EA5E9",
+        "bg": "transparent",
     }
 
 

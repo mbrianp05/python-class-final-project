@@ -106,14 +106,14 @@ class Sidebar(CTkFrame):
             item = ActivationFeedbackLabel(
                 self.scrollable_frame,
                 text=shorten_gesture_name(gesture.name),
-                font=loader.get_fonts()["bold"],
+                font=loader.get_fonts(18)["regular"],
                 image=self._get_icon(gesture),
                 transition=HighlightTransition(
                     fg_color="#3A8CFF", text_color="#fff", duration=500, pulses=2
                 ),
             )
 
-            item.grid(row=i, column=0, sticky="we")
+            item.grid(row=i, column=0, sticky="we", padx=10)
 
     def highlight_gesture(self, index: int = 0):
         labels = list(self.scrollable_frame.children.values())
@@ -764,7 +764,7 @@ class CustomButton(ImagesEffectLabel):
         command: Callable[[], Any] | None = None,
     ):
         super().__init__(master, text=text, images_pack=images_pack)
-        self.configure(cursor="hand2", fg_color="#555", width=46)
+        self.configure(cursor="hand2", fg_color="#333", width=46)
 
         self.command = command
         self.images_pack = images_pack
@@ -783,11 +783,11 @@ class CustomButton(ImagesEffectLabel):
 
     def on_leave(self, _):
         self.activate_image("noEvent")
-        self.configure(fg_color="#444")
+        self.configure(fg_color="#333")
 
     def on_enter(self, _):
         self.activate_image("mouseEnter")
-        self.configure(fg_color="#222")
+        self.configure(fg_color="transparent")
 
 
 class RegularLabel(ctk.CTkLabel):
