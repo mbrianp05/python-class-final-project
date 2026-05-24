@@ -50,7 +50,7 @@ class Sidebar(CTkFrame):
         self.bold_font = fonts["bold"]
 
     def create_header(self):
-        self.header = ctk.CTkFrame(self, fg_color="transparent")
+        self.header = ctk.CTkFrame(self, corner_radius=0)
         self.header.grid(row=0, column=0, padx=0, sticky="we")
 
         self.header_label = ctk.CTkLabel(
@@ -61,7 +61,7 @@ class Sidebar(CTkFrame):
             fg_color="transparent",
             anchor="w",
         )
-        self.header_label.grid(row=0, column=1, sticky="we", padx=15)
+        self.header_label.grid(row=0, column=1, pady=(0, 1), sticky="wens", padx=15)
 
         icons = loader.get_icons()
 
@@ -81,10 +81,10 @@ class Sidebar(CTkFrame):
         self.scrollable_frame = ctk.CTkScrollableFrame(
             self,
             orientation="vertical",
-            fg_color="transparent",
+            corner_radius=0,
         )
         self.scrollable_frame.columnconfigure(0, weight=1)
-        self.scrollable_frame.grid(row=1, column=0, pady=0, sticky="nsew")
+        self.scrollable_frame.grid(row=1, column=0, pady=(1, 0), sticky="nsew")
         self.display_gestures_list()
 
     def _get_icon(self, gesture: Gesture):
@@ -203,7 +203,7 @@ class SettingsHeader(ctk.CTkFrame):
 
 class SettingsForm(ctk.CTkScrollableFrame):
     def __init__(self, master):
-        super().__init__(master)
+        super().__init__(master, orientation="vertical")
 
         self.configure(fg_color="transparent")
         self.gestures = fetch_gestures()
