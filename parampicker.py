@@ -34,8 +34,8 @@ _COLORS = {
 }
 
 _RADIUS = 8
-_ENTRY_HEIGHT = 34
-_BUTTON_HEIGHT = 34
+_ENTRY_HEIGHT = 31
+_BUTTON_HEIGHT = 31
 _PATH_MAX_LEN = 45
 
 
@@ -189,15 +189,13 @@ class FileParamPanel(BaseParamPanel):
             anchor="w",
             wraplength=260,
         )
-        self._path_label.grid(row=0, column=0, sticky="w", padx=(10, 8))
+        self._path_label.grid(row=0, column=0, sticky="w", padx=(0, 12))
 
         self._browse_btn = ctk.CTkButton(
             self,
             text="Buscar archivo",
             font=self.font_regular,
             height=_BUTTON_HEIGHT,
-            fg_color=_COLORS["button_bg"],
-            hover_color=_COLORS["button_hover"],
             corner_radius=_RADIUS,
             command=self._on_browse,
         )
@@ -212,7 +210,7 @@ class FileParamPanel(BaseParamPanel):
             fg_color=_COLORS["bg"],
             anchor="w",
         )
-        self._error_label.grid(row=1, column=0, columnspan=2, sticky="w", padx=12)
+        self._error_label.grid(row=1, column=0, columnspan=2, sticky="w", padx=(0, 12))
 
         self._value: str | None = None
         self._state = FormState(is_valid=False, error_message="Sin archivo")
@@ -275,15 +273,13 @@ class FolderParamPanel(BaseParamPanel):
             anchor="w",
             wraplength=260,
         )
-        self._path_label.grid(row=0, column=0, sticky="w", padx=(10, 8))
+        self._path_label.grid(row=0, column=0, sticky="w", padx=(0, 12))
 
         self._browse_btn = ctk.CTkButton(
             self,
             text="Buscar carpeta",
             font=self.font_regular,
             height=_BUTTON_HEIGHT,
-            fg_color=_COLORS["button_bg"],
-            hover_color=_COLORS["button_hover"],
             corner_radius=_RADIUS,
             command=self._on_browse,
         )
@@ -297,7 +293,7 @@ class FolderParamPanel(BaseParamPanel):
             fg_color=_COLORS["bg"],
             anchor="w",
         )
-        self._error_label.grid(row=1, column=0, columnspan=2, sticky="w", padx=12)
+        self._error_label.grid(row=1, column=0, columnspan=2, sticky="w", padx=(0, 12))
 
         self._value: str | None = None
         self._state = FormState(is_valid=False, error_message="Sin carpeta")

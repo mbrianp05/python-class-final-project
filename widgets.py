@@ -474,7 +474,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 command=self.update_config,
                 font=loader.get_fonts()["regular"],
             )
-            ch.grid(row=1, column=i, pady=0)
+            ch.grid(row=1, column=i, pady=10)
             checkboxes.append(ch)
 
         (self.left_hand_activator, self.right_hand_activator, *_) = checkboxes
