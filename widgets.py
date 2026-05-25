@@ -29,12 +29,14 @@ from utils import (
 
 
 class Sidebar(CTkFrame):
+    _BG_COLOR = "#30302e"
+
     def __init__(self, master, controller):
         super().__init__(master, fg_color="transparent", width=500)
         self.gestures = fetch_gestures()
 
         self.controller = controller
-        # ── Assets: obtenidos del singleton, no se recrean ──────────────
+
         self.icons = AssetRegistry.icons()
         fonts = AssetRegistry.fonts()
 
@@ -50,7 +52,7 @@ class Sidebar(CTkFrame):
         self.rowconfigure(1, weight=1)
 
     def create_header(self):
-        self.header = ctk.CTkFrame(self, corner_radius=0)
+        self.header = ctk.CTkFrame(self, corner_radius=0, fg_color=self._BG_COLOR)
         self.header.grid(row=0, column=0, padx=0, sticky="we")
 
         self.header_label = ctk.CTkLabel(
@@ -79,9 +81,7 @@ class Sidebar(CTkFrame):
 
     def create_scrollbar_panel(self):
         self.scrollable_frame = ctk.CTkScrollableFrame(
-            self,
-            orientation="vertical",
-            corner_radius=0,
+            self, orientation="vertical", corner_radius=0, fg_color=self._BG_COLOR
         )
         self.scrollable_frame.columnconfigure(0, weight=1)
         self.scrollable_frame.grid(row=1, column=0, pady=(1, 0), sticky="nsew")
