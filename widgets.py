@@ -34,6 +34,7 @@ class Sidebar(CTkFrame):
         self.gestures = fetch_gestures()
 
         self.controller = controller
+        self.icons = loader.get_icons()
 
         self.set_layout()
         self.init_fonts()
@@ -89,15 +90,13 @@ class Sidebar(CTkFrame):
         self.display_gestures_list()
 
     def _get_icon(self, gesture: Gesture):
-        icons = loader.get_icons()
-
         action_icon_dict = {
-            Action.TAKE_SCREENSHOT: icons["screenshot"],
-            Action.OPEN_FILE: icons["open_file"],
-            Action.OPEN_FOLDER: icons["open_folder"],
-            Action.RUN_PROGRAM: icons["run_program"],
-            Action.SET_WIFI_STATE: icons["set_wifi"],
-            Action.SET_VOLUME: icons["set_volume"],
+            Action.TAKE_SCREENSHOT: self.icons["screenshot"],
+            Action.OPEN_FILE: self.icons["open_file"],
+            Action.OPEN_FOLDER: self.icons["open_folder"],
+            Action.RUN_PROGRAM: self.icons["run_program"],
+            Action.SET_WIFI_STATE: self.icons["set_wifi"],
+            Action.SET_VOLUME: self.icons["set_volume"],
         }
 
         return get_or_default(action_icon_dict, gesture.effect, None)
@@ -126,8 +125,7 @@ class Sidebar(CTkFrame):
         labels = list(self.scrollable_frame.children.values())
 
         for label in labels:
-            label.destroy()
-            label = None
+            del label
 
         self.gestures = fetch_gestures()
         self.display_gestures_list()
