@@ -122,6 +122,16 @@ class Sidebar(CTkFrame):
         if index < len(labels):
             cast(ActivationFeedbackLabel, labels[index]).highlight()
 
+    def update(self):
+        labels = list(self.scrollable_frame.children.values())
+
+        for label in labels:
+            label.destroy()
+            label = None
+
+        self.gestures = fetch_gestures()
+        self.display_gestures_list()
+
 
 class Camera(ctk.CTkFrame):
     def __init__(self, master):
@@ -343,7 +353,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
     def display_current_gesture_selector(self):
         self.gesture_selector = ctk.CTkComboBox(
             self.gesture_info_panel,
-            values=[g.name for g in self.gestures],
             height=31,
             width=220,
             command=lambda _: self.set_current_gesture(),
@@ -361,6 +370,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
         )
 
     def _set_current_gesture_selector(self):
+        self.gesture_selector.configure(values=[g.name for g in self.gestures])
+
         if self.current_gesture is not None:
             self.gesture_selector.set(self.current_gesture.name)
 
@@ -684,6 +695,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             return
 
         self.gestures[idx] = self.current_gesture
+        self._set_current_gesture_selector()
 
     def save_new_config(self):
         if self.current_gesture is not None:
@@ -734,6 +746,14 @@ class SettingsForm(ctk.CTkScrollableFrame):
         )
         self.save_button.grid(row=3, column=0, sticky="ws")
 
+    def _remove_local_gesture(self):
+        if self.current_gesture is None:
+            return
+
+        self.gestures = list(
+            filter(lambda g: g.id != self.current_gesture.id, self.gestures)  # type: ignore
+        )
+
     def _delete_current_gesture(self):
         if self.current_gesture is None:
             return
@@ -741,13 +761,21 @@ class SettingsForm(ctk.CTkScrollableFrame):
         if self.current_gesture.id == -1:
             return
 
-        if confirm("¿Deseas realmente eliminar este gesto?"):
-            remove_gesture(self.current_gesture)
+        result = True
 
-        self._default_gesture()
-        self._set_current_gesture_selector()
-        self._adjust_current_configuration_display()
-        self._change_param_type_form()
+        if confirm("¿Deseas realmente eliminar este gesto?"):
+            self._remove_local_gesture()
+            result = remove_gesture(self.current_gesture)
+        else:
+            return
+
+        if result:
+            self._default_gesture()
+            self._set_current_gesture_selector()
+            self._adjust_current_configuration_display()
+            self._change_param_type_form()
+        else:
+            messagebox_error("Error", "No se pudo eliminar el gesto")
 
     def display_delete_button(self):
         self.delete_button = ctk.CTkButton(

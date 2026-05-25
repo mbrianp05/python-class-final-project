@@ -1,10 +1,12 @@
+from typing import Dict, cast
+
 import customtkinter as ctk
 
 import loader
 from notifier import Notifier
 from uiclasses import View
 from utils import create_config_file_if_not_exists, supress_warnings, verify_os
-from views import ConfigureGesturesView, GestureDetectionView
+from views import BaseView, ConfigureGesturesView, GestureDetectionView
 
 loader.load_fonts_files()
 create_config_file_if_not_exists()
@@ -16,7 +18,7 @@ class App(ctk.CTk):
         super().__init__()
 
         self.title("Reconocimiento de gestos")
-        self.views = {}
+        self.views: Dict[View, BaseView] = {}
 
         Notifier.init(self)
 
@@ -28,7 +30,12 @@ class App(ctk.CTk):
         self.views[View.SETTINGS_VIEW] = ConfigureGesturesView(self)
 
         # Esto es temporal
-        self.bind("<Key>", self.views[View.DETECTION_VIEW].highlight_gesture)
+        self.bind(
+            "<Key>",
+            cast(
+                GestureDetectionView, self.views[View.DETECTION_VIEW]
+            ).highlight_gesture,
+        )
 
         for view in self.views.values():
             view.pack(fill="both", expand=True)
@@ -52,6 +59,7 @@ class App(ctk.CTk):
             view.pack_forget()
 
         self.views[active_view].pack(fill="both", expand=True)
+        self.views[active_view].update()
 
     def maximize_window(self):
         self._state_before_windows_set_titlebar_color = "zoomed"

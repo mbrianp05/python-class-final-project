@@ -1,10 +1,22 @@
+import abc
+
 import customtkinter as ctk
 
 from utils import get_color_palette
 from widgets import Camera, SettingsForm, SettingsHeader, Sidebar
 
 
-class GestureDetectionView(ctk.CTkFrame):
+class BaseView(ctk.CTkFrame, abc.ABC):
+    @abc.abstractmethod
+    def on_closing(self):
+        """Lo que ocurre cuando se cierra la aplicacion"""
+
+    @abc.abstractmethod
+    def update(self):
+        """Lo que ocurre al navegar al la vista"""
+
+
+class GestureDetectionView(BaseView):
     def __init__(self, master):
         super().__init__(master, fg_color=get_color_palette()["bg"])
 
@@ -33,8 +45,11 @@ class GestureDetectionView(ctk.CTkFrame):
     def on_closing(self):
         self.camera_frame.on_closing()
 
+    def update(self):
+        self.sidebar.update()
 
-class ConfigureGesturesView(ctk.CTkFrame):
+
+class ConfigureGesturesView(BaseView):
     def __init__(self, master):
         super().__init__(master, fg_color=get_color_palette()["bg"])
 
@@ -53,3 +68,9 @@ class ConfigureGesturesView(ctk.CTkFrame):
     def display_header(self):
         self.header = SettingsHeader(self, controller=self.master)
         self.header.grid(row=0, column=0, sticky="nwse")
+
+    def update(self):
+        pass
+
+    def on_closing(self):
+        pass
