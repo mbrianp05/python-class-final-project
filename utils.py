@@ -39,7 +39,7 @@ def shorten_gesture_name(name: str) -> str:
 def get_or_default(sequence, index, default=None):
     try:
         return sequence[index]
-    except (ValueError, IndexError):
+    except (ValueError, IndexError, KeyError):
         return default
 
 

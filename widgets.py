@@ -32,7 +32,7 @@ class Sidebar(CTkFrame):
     _BG_COLOR = "#30302e"
 
     def __init__(self, master, controller):
-        super().__init__(master, fg_color="transparent", width=500)
+        super().__init__(master, fg_color="transparent")
         self.gestures = fetch_gestures()
 
         self.controller = controller
@@ -99,19 +99,67 @@ class Sidebar(CTkFrame):
 
         return get_or_default(action_icon_dict, gesture.effect, None)
 
+    def _get_color(self, gesture: Gesture):
+        color_dict = {
+            Action.SET_WIFI_STATE: "#273241",
+            Action.TAKE_SCREENSHOT: "#333842",
+            Action.OPEN_FOLDER: "#27483F",
+            Action.RUN_PROGRAM: "#543B34",
+            Action.SET_VOLUME: "#3A234F",
+            Action.OPEN_FILE: "#51412A",
+        }
+
+        return get_or_default(color_dict, gesture.effect, "transparent")
+
+    def _get_description(self, gesture: Gesture):
+        color_dict = {
+            Action.SET_WIFI_STATE: "Cambiar estado del WIFI",
+            Action.TAKE_SCREENSHOT: "Captura de pantalla",
+            Action.OPEN_FOLDER: "Abrir carpeta",
+            Action.RUN_PROGRAM: "Abrir programa",
+            Action.SET_VOLUME: "Cambiar el volumen",
+            Action.OPEN_FILE: "Abrir archivo",
+        }
+
+        return get_or_default(color_dict, gesture.effect, "")
+
     def display_gestures_list(self):
         for i, gesture in enumerate(self.gestures):
+            icon_frame = ctk.CTkFrame(self.scrollable_frame, fg_color="transparent")
+
+            box = ctk.CTkFrame(
+                icon_frame,
+                fg_color=self._get_color(gesture),
+                corner_radius=10,
+            )
+            description_frame = ctk.CTkFrame(icon_frame, fg_color="transparent")
+
             item = ActivationFeedbackLabel(
-                self.scrollable_frame,
+                description_frame,
                 text=shorten_gesture_name(gesture.name),
-                font=AssetRegistry.fonts(18)["regular"],
-                image=self._get_icon(gesture),
+                font=AssetRegistry.fonts(16)["regular"],
                 transition=HighlightTransition(
                     fg_color="#3A8CFF", text_color="#fff", duration=500, pulses=2
                 ),
+                height=16,
             )
+            item.grid(row=0, column=1, sticky="w")
 
-            item.grid(row=i, column=0, sticky="we", padx=10)
+            description = ctk.CTkLabel(
+                description_frame,
+                text=self._get_description(gesture),
+                font=AssetRegistry.fonts(13)["regular"],
+                text_color="#999",
+                height=20,
+            )
+            description.grid(row=1, column=1, sticky="wns")
+
+            icon = ctk.CTkLabel(box, text="", image=self._get_icon(gesture), height=36)  # type: ignore
+            icon.grid(row=0, column=0, padx=8, sticky="ns")
+
+            box.grid(row=0, column=0, padx=7, pady=4, rowspan=2)
+            description_frame.grid(row=0, column=1, sticky="we")
+            icon_frame.grid(row=i, column=0, sticky="w")
 
     def highlight_gesture(self, index: int = 0):
         labels = list(self.scrollable_frame.children.values())
@@ -819,7 +867,7 @@ class CustomButton(ImagesEffectLabel):
         command: Callable[[], Any] | None = None,
     ):
         super().__init__(master, text=text, images_pack=images_pack)
-        self.configure(cursor="hand2", fg_color="#333", width=46)
+        self.configure(cursor="hand2", fg_color="#40403e", width=46)
 
         self.command = command
         self.images_pack = images_pack
@@ -838,7 +886,7 @@ class CustomButton(ImagesEffectLabel):
 
     def on_leave(self, _):
         self.activate_image("noEvent")
-        self.configure(fg_color="#333")
+        self.configure(fg_color="#30302e")
 
     def on_enter(self, _):
         self.activate_image("mouseEnter")
@@ -930,12 +978,12 @@ class ActivationFeedbackLabel(ctk.CTkLabel):
     ):
         super().__init__(
             master,
-            text=f"  {text}",  # el espacio es para que el texto no se vea tan pegado al icono
+            text=text,  # el espacio es para que el texto no se vea tan pegado al icono
             font=font,
             image=image,  # type: ignore
-            height=45,
             fg_color="transparent",
             compound="left",
+            text_color="#fff",
             anchor="w",
             **kwargs,
         )
