@@ -133,6 +133,7 @@ class Sidebar(CTkFrame):
                 corner_radius=10,
             )
             description_frame = ctk.CTkFrame(icon_frame, fg_color="transparent")
+            description_frame.rowconfigure((0, 1), weight=1)
 
             item = ActivationFeedbackLabel(
                 description_frame,
@@ -143,7 +144,7 @@ class Sidebar(CTkFrame):
                 ),
                 height=16,
             )
-            item.grid(row=0, column=1, sticky="w")
+            item.grid(row=0, column=1, sticky="wns")
 
             description = ctk.CTkLabel(
                 description_frame,
@@ -159,7 +160,7 @@ class Sidebar(CTkFrame):
 
             box.grid(row=0, column=0, padx=7, pady=4, rowspan=2)
             description_frame.grid(row=0, column=1, sticky="we")
-            icon_frame.grid(row=i, column=0, sticky="w")
+            icon_frame.grid(row=i, column=0, pady=(10, 0), sticky="w")
 
     def highlight_gesture(self, index: int = 0):
         labels = list(self.scrollable_frame.children.values())
