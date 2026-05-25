@@ -8,9 +8,9 @@ import tksvg
 from customtkinter import CTkFrame
 from PIL import Image
 
-import loader
 from actions import get_actions_parameter_type
 from gesture import Gesture, GestureRecognition, HandProfile
+from loader import AssetRegistry
 from parampicker import ParamPicker
 from services import fetch_gestures, remove_gesture, update_gesture
 from uiclasses import HighlightTransition, MessageType, MouseEventsImagesPack, View
@@ -34,22 +34,20 @@ class Sidebar(CTkFrame):
         self.gestures = fetch_gestures()
 
         self.controller = controller
-        self.icons = loader.get_icons()
+        # ── Assets: obtenidos del singleton, no se recrean ──────────────
+        self.icons = AssetRegistry.icons()
+        fonts = AssetRegistry.fonts()
+
+        self.header_font = fonts["title"]
+        self.bold_font = fonts["bold"]
 
         self.set_layout()
-        self.init_fonts()
         self.create_header()
         self.create_scrollbar_panel()
 
     def set_layout(self):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
-
-    def init_fonts(self):
-        fonts = loader.get_fonts()
-
-        self.header_font = fonts["title"]
-        self.bold_font = fonts["bold"]
 
     def create_header(self):
         self.header = ctk.CTkFrame(self, corner_radius=0)
@@ -65,7 +63,7 @@ class Sidebar(CTkFrame):
         )
         self.header_label.grid(row=0, column=1, pady=(0, 1), sticky="wens", padx=15)
 
-        icons = loader.get_icons()
+        icons = self.icons  # ya en caché
 
         images_pack = MouseEventsImagesPack(
             noEvent=icons["gear"],
@@ -106,7 +104,7 @@ class Sidebar(CTkFrame):
             item = ActivationFeedbackLabel(
                 self.scrollable_frame,
                 text=shorten_gesture_name(gesture.name),
-                font=loader.get_fonts(18)["regular"],
+                font=AssetRegistry.fonts(18)["regular"],
                 image=self._get_icon(gesture),
                 transition=HighlightTransition(
                     fg_color="#3A8CFF", text_color="#fff", duration=500, pulses=2
@@ -190,14 +188,14 @@ class SettingsHeader(ctk.CTkFrame):
         self.title_label = ctk.CTkLabel(
             self,
             text="Configurar gestos",
-            font=loader.get_fonts()["title"],
+            font=AssetRegistry.fonts()["title"],
             fg_color="transparent",
             height=50,
         )
         self.title_label.grid(row=0, column=1, padx=15)
 
     def display_go_back_button(self):
-        icons = loader.get_icons(30)
+        icons = AssetRegistry.icons(30)
 
         pack = MouseEventsImagesPack(
             noEvent=icons["arrow_left"], mouseEnter=icons["arrow_left_darker"]
@@ -260,7 +258,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             width=360,
             height=32,
             state="readonly",
-            font=loader.get_fonts()["regular"],
+            font=AssetRegistry.fonts()["regular"],
             command=lambda _: self.change_action(),
         )
         self.action_selector.grid(row=1, column=0, columnspan=2, sticky="we")
@@ -312,7 +310,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self.gesture_info_panel,
             height=31,
             width=220,
-            font=loader.get_fonts()["regular"],
+            font=AssetRegistry.fonts()["regular"],
         )
         self.name_field.insert(0, text)
         self.name_field.grid(row=0, column=1, sticky="we")
@@ -355,7 +353,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             width=220,
             command=lambda _: self.set_current_gesture(),
             state="readonly",
-            font=loader.get_fonts()["regular"],
+            font=AssetRegistry.fonts()["regular"],
         )
 
         self._set_current_gesture_selector()
@@ -462,7 +460,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         return [get_repr_for_action(p) for p in actions]
 
     def display_active_hands_selector(self):
-        icons = loader.get_icons(scale=260)
+        icons = AssetRegistry.icons(scale=260)
         left_images_pack = MouseEventsImagesPack(
             noEvent=icons["hand-1"], mouseEnter=icons["hand-1-darker"]
         )
@@ -487,7 +485,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 self.form_panel,
                 text="",
                 command=self.update_config,
-                font=loader.get_fonts()["regular"],
+                font=AssetRegistry.fonts()["regular"],
             )
             ch.grid(row=1, column=i, pady=10)
             checkboxes.append(ch)
@@ -509,7 +507,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             state="readonly",
             values=values,
             command=lambda _: self.update_config(),
-            font=loader.get_fonts()["regular"],
+            font=AssetRegistry.fonts()["regular"],
         )
         self.left_hand_profile_selector.set(values[0])
         self.left_hand_profile_selector.grid(row=3, column=0)
@@ -521,7 +519,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             state="readonly",
             values=values,
             command=lambda _: self.update_config(),
-            font=loader.get_fonts()["regular"],
+            font=AssetRegistry.fonts()["regular"],
         )
         self.right_hand_profile_selector.set(values[0])
         self.right_hand_profile_selector.grid(row=3, column=1)
@@ -664,7 +662,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
                     self.checkbox_collection_panel,
                     text=name,
                     command=self.update_config,
-                    font=loader.get_fonts()["regular"],
+                    font=AssetRegistry.fonts()["regular"],
                 )
                 checkbox.grid(row=idx, column=hand_number, pady=10)
 
@@ -739,7 +737,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self.gesture_info_panel,
             height=31,
             text="Guardar",
-            font=loader.get_fonts()["regular"],
+            font=AssetRegistry.fonts()["regular"],
             command=self.save_new_config,
         )
         self.save_button.grid(row=3, column=0, sticky="ws")
@@ -780,7 +778,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self.gesture_info_panel,
             height=31,
             text="Eliminar",
-            font=loader.get_fonts()["regular"],
+            font=AssetRegistry.fonts()["regular"],
             command=self._delete_current_gesture,
         )
         self.delete_button.grid(row=3, column=1, sticky="ws")
@@ -861,7 +859,7 @@ class RegularLabel(ctk.CTkLabel):
             text=text,
             fg_color="transparent",
             text_color=text_color,
-            font=loader.get_fonts(size)[variant],
+            font=AssetRegistry.fonts(size)[variant],
             compound="center",
         )
 
@@ -875,7 +873,7 @@ class FloatingFeedbackLabel(ctk.CTkLabel):
             corner_radius=10,
             padx=20,
             pady=12,
-            font=loader.get_fonts()["bold"],
+            font=AssetRegistry.fonts()["bold"],
             **kwargs,
         )
 

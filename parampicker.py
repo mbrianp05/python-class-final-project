@@ -5,7 +5,7 @@ from typing import Any
 
 import customtkinter as ctk
 
-import loader
+from loader import AssetRegistry
 from numeric_input import NumericInput
 from utilityclasses import FormState, ParamType
 from utils import (
@@ -55,7 +55,7 @@ class BaseParamPanel(ctk.CTkFrame, abc.ABC):
             width=400,
             **kwargs,
         )
-        font_map = loader.get_fonts()
+        font_map = AssetRegistry.fonts()
         self.font_regular = font_map["regular"]
         self.font_bold = font_map["bold"]
         self._build()

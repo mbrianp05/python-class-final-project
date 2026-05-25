@@ -2,13 +2,14 @@ from typing import Dict, cast
 
 import customtkinter as ctk
 
-import loader
+from loader import AssetRegistry
 from notifier import Notifier
 from uiclasses import View
 from utils import create_config_file_if_not_exists, supress_warnings, verify_os
 from views import BaseView, ConfigureGesturesView, GestureDetectionView
 
-loader.load_fonts_files()
+AssetRegistry.load_fonts()
+
 create_config_file_if_not_exists()
 supress_warnings()
 
