@@ -28,6 +28,18 @@ def persist_gestures(gestures: List[Gesture]) -> bool:
     return True
 
 
+def remove_gesture(gesture: Gesture) -> bool:
+    list = fetch_gestures()
+    list = filter(lambda g: g.id != gesture.id, list)
+
+    serializable = [utils.turn_gesture_into_dict(g) for g in list]
+
+    with open(utils.CONFIG_FILE_NAME, "w") as config_file:
+        json.dump(serializable, config_file, indent=4)
+
+    return True
+
+
 def update_gesture(gesture: Gesture) -> bool:
     list = fetch_gestures()
     old = None

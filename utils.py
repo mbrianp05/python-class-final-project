@@ -61,6 +61,10 @@ def messagebox_error(title: str, message: str):
     messagebox.showerror(title, message)
 
 
+def confirm(message: str) -> bool:
+    return messagebox.askokcancel("Confirma tu decisión", message=message)
+
+
 # LA PALETA DE COLORES DE LA APP
 # CAMBIAR AL GUSTO
 def get_color_palette():

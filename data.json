@@ -175,7 +175,7 @@
     },
     {
         "id": 8,
-        "name": "Captura de pantalla",
+        "name": "Captura",
         "effect": "take_screenshot",
         "settings": {
             "hands": [

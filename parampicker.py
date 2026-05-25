@@ -423,7 +423,7 @@ class ParamPicker(ctk.CTkFrame):
         """Devuelve el FormState del panel activo."""
         if self._active_type is None:
             return FormState(
-                is_valid=False,
-                error_message="No se ha proporcionado el valor del parámetro",
+                is_valid=True,
+                error_message=None,
             )
         return self._panels[self._active_type].get_state()
