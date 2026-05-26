@@ -75,7 +75,7 @@ class GestureItem(ctk.CTkFrame):
         desc_label = ctk.CTkLabel(
             description_frame,
             text=description,
-            font=AssetRegistry.fonts(13)["bold"],
+            font=AssetRegistry.fonts(13)["regular"],
             text_color="#999",
             height=10,
         )
