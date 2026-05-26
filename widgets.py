@@ -840,8 +840,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
         else:
             messagebox_error("Error", msg or "")
 
-        # Notifier.get().notify(type, msg or "Hello")
-
     def display_save_settings_button(self):
         self.save_button = ctk.CTkButton(
             self.gesture_info_panel,

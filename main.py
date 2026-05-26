@@ -3,7 +3,6 @@ from typing import Dict, cast
 import customtkinter as ctk
 
 from loader import AssetRegistry
-from notifier import Notifier
 from uiclasses import View
 from utils import create_config_file_if_not_exists, supress_warnings, verify_os
 from views import BaseView, ConfigureGesturesView, GestureDetectionView
@@ -20,8 +19,6 @@ class App(ctk.CTk):
 
         self.title("Reconocimiento de gestos")
         self.views: Dict[View, BaseView] = {}
-
-        Notifier.init(self)
 
         self.set_views()
         self.maximize_window()
