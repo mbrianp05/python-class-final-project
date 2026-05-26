@@ -23,12 +23,3 @@ class MouseEventsImagesPack:
     noEvent: tksvg.SvgImage
     mouseEnter: tksvg.SvgImage | None = None
     mouseClick: tksvg.SvgImage | None = None
-
-
-@dataclass
-class HighlightTransition:
-    fg_color: str
-    text_color: str
-    duration: int
-    pulses: int
-    is_running: bool = False

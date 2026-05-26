@@ -75,7 +75,7 @@ class GestureItem(ctk.CTkFrame):
         desc_label = ctk.CTkLabel(
             description_frame,
             text=description,
-            font=AssetRegistry.fonts(13)["regular"],
+            font=AssetRegistry.fonts(13)["bold"],
             text_color="#999",
             height=10,
         )
@@ -210,6 +210,9 @@ class Sidebar(CTkFrame):
         return get_or_default(color_dict, gesture.effect, "")
 
     def display_gestures_list(self):
+        if len(self._items) > 0:
+            return
+
         for i, gesture in enumerate(self.gestures):
             item = GestureItem(
                 self.scrollable_frame,
@@ -218,8 +221,7 @@ class Sidebar(CTkFrame):
                 icon_bg_color=self._get_color(gesture),
                 description=self._get_description(gesture),
             )
-            item.grid(row=i, column=0, pady=(10, 0), padx=6, sticky="we")
-
+            item.grid(row=i, column=0, pady=(7, 0), padx=6, sticky="we")
             self._items.append(item)
 
     def highlight_gesture(self, index: int = 0):
@@ -228,7 +230,10 @@ class Sidebar(CTkFrame):
 
     def update(self):
         for item in self._items:
+            self._items.remove(item)
             del item
+
+        self._items = []
 
         self.gestures = fetch_gestures()
         self.display_gestures_list()
