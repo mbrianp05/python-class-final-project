@@ -28,6 +28,7 @@ class GestureDetectionView(BaseView):
             self.sidebar.highlight_gesture(int(event.char))
 
     def set_layout(self):
+        self.columnconfigure(0, weight=0, minsize=Sidebar._WIDTH)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
 
