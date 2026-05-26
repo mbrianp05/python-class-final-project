@@ -4,7 +4,6 @@ from typing import Any, Callable, List, Literal, cast
 
 import customtkinter as ctk
 import cv2
-import tksvg
 from customtkinter import CTkFrame
 from PIL import Image
 
@@ -13,7 +12,7 @@ from gesture import Gesture, GestureRecognition, HandProfile
 from loader import AssetRegistry
 from parampicker import ParamPicker
 from services import fetch_gestures, remove_gesture, update_gesture
-from uiclasses import HighlightTransition, MessageType, MouseEventsImagesPack, View
+from uiclasses import MessageType, MouseEventsImagesPack, View
 from utilityclasses import Action, Finger, FormState, ParamType
 from utils import (
     confirm,
@@ -28,6 +27,90 @@ from utils import (
 )
 
 
+class GestureItem(ctk.CTkFrame):
+    """
+    Fila de la lista de gestos del Sidebar.
+
+    Contiene el icono de la accion, el nombre del gesto y su descripcion.
+    El metodo highlight() hace parpadear el fondo dos veces entre
+    _HIGHLIGHT_COLOR y "transparent".
+    """
+
+    _HIGHLIGHT_COLOR = "#262624"
+    _PULSE_MS = 250  # duracion de cada semiciclo (encendido / apagado)
+    _PULSES = 2  # numero de parpadeos completos
+
+    def __init__(
+        self,
+        master,
+        gesture,
+        icon,
+        icon_bg_color: str,
+        description: str,
+    ):
+        super().__init__(master, fg_color="transparent")
+
+        self._is_animating = False
+
+        self._build(gesture, icon, icon_bg_color, description)
+
+    # ------------------------------------------------------------------ #
+    # Construccion de widgets                                              #
+    # ------------------------------------------------------------------ #
+
+    def _build(self, gesture, icon, icon_bg_color: str, description: str) -> None:
+        icon_box = ctk.CTkFrame(self, fg_color=icon_bg_color, corner_radius=10)
+
+        description_frame = ctk.CTkFrame(self, fg_color="transparent")
+        description_frame.rowconfigure((0, 1), weight=1)
+
+        name_label = ctk.CTkLabel(
+            description_frame,
+            text=shorten_gesture_name(gesture.name),
+            font=AssetRegistry.fonts(16)["regular"],
+            height=10,
+        )
+        name_label.grid(row=0, column=1, sticky="wns", pady=(2, 0))
+
+        desc_label = ctk.CTkLabel(
+            description_frame,
+            text=description,
+            font=AssetRegistry.fonts(13)["regular"],
+            text_color="#999",
+            height=10,
+        )
+        desc_label.grid(row=1, column=1, sticky="wns", pady=4)
+
+        icon_label = ctk.CTkLabel(icon_box, text="", image=icon, height=36)  # type: ignore
+        icon_label.grid(row=0, column=0, padx=8, sticky="ns")
+
+        icon_box.grid(row=0, column=0, padx=7, pady=4, rowspan=2)
+        description_frame.grid(row=0, column=1, sticky="we", padx=7, pady=4)
+
+    # ------------------------------------------------------------------ #
+    # Animacion de parpadeo                                                #
+    # ------------------------------------------------------------------ #
+
+    def highlight(self) -> None:
+        """Parpadea el fondo del item dos veces y vuelve a transparent."""
+        if self._is_animating:
+            return
+
+        self._is_animating = True
+        self._run_pulse(remaining=self._PULSES * 2)
+
+    def _run_pulse(self, remaining: int) -> None:
+        if remaining <= 0:
+            self.configure(fg_color="transparent")
+            self._is_animating = False
+            return
+
+        # semiciclos pares → encendido, impares → apagado
+        color = self._HIGHLIGHT_COLOR if remaining % 2 == 0 else "transparent"
+        self.configure(fg_color=color)
+        self.after(self._PULSE_MS, lambda: self._run_pulse(remaining - 1))
+
+
 class Sidebar(CTkFrame):
     _BG_COLOR = "#30302e"
     _WIDTH = 280
@@ -38,6 +121,7 @@ class Sidebar(CTkFrame):
         self.gestures = fetch_gestures()
 
         self.controller = controller
+        self._items: List[GestureItem] = []
 
         self.icons = AssetRegistry.icons()
         fonts = AssetRegistry.fonts()
@@ -127,59 +211,24 @@ class Sidebar(CTkFrame):
 
     def display_gestures_list(self):
         for i, gesture in enumerate(self.gestures):
-            c = "#262624" if i == 0 else "transparent"
-
-            item_frame = ctk.CTkFrame(self.scrollable_frame, fg_color=c)
-
-            box = ctk.CTkFrame(
-                item_frame,
-                fg_color=self._get_color(gesture),
-                corner_radius=10,
+            item = GestureItem(
+                self.scrollable_frame,
+                gesture=gesture,
+                icon=self._get_icon(gesture),
+                icon_bg_color=self._get_color(gesture),
+                description=self._get_description(gesture),
             )
-            description_frame = ctk.CTkFrame(item_frame, fg_color="transparent")
-            description_frame.rowconfigure((0, 1), weight=1)
+            item.grid(row=i, column=0, pady=(10, 0), padx=6, sticky="we")
 
-            item = ctk.CTkLabel(
-                description_frame,
-                text=shorten_gesture_name(gesture.name),
-                font=AssetRegistry.fonts(16)["regular"],
-                height=10,
-            )
-            item.grid(row=0, column=1, sticky="wns", pady=(2, 0))
-
-            description = ctk.CTkLabel(
-                description_frame,
-                text=self._get_description(gesture),
-                font=AssetRegistry.fonts(13)["regular"],
-                text_color="#999",
-                height=10,
-            )
-            description.grid(row=1, column=1, sticky="wns", pady=4)
-
-            icon = ctk.CTkLabel(box, text="", image=self._get_icon(gesture), height=36)  # type: ignore
-            icon.grid(row=0, column=0, padx=8, sticky="ns")
-
-            box.grid(row=0, column=0, padx=7, pady=4, rowspan=2)
-            description_frame.grid(
-                row=0,
-                column=1,
-                sticky="we",
-                padx=7,
-                pady=4,
-            )
-            item_frame.grid(row=i, column=0, pady=(10, 0), padx=6, sticky="we")
+            self._items.append(item)
 
     def highlight_gesture(self, index: int = 0):
-        labels = list(self.scrollable_frame.children.values())
-
-        if index < len(labels):
-            cast(ActivationFeedbackLabel, labels[index]).highlight()
+        if index < len(self._items):
+            self._items[index].highlight()
 
     def update(self):
-        labels = list(self.scrollable_frame.children.values())
-
-        for label in labels:
-            del label
+        for item in self._items:
+            del item
 
         self.gestures = fetch_gestures()
         self.display_gestures_list()
@@ -894,7 +943,7 @@ class CustomButton(ImagesEffectLabel):
 
     def on_leave(self, _):
         self.activate_image("noEvent")
-        self.configure(fg_color="#30302e")
+        self.configure(fg_color="#40403e")
 
     def on_enter(self, _):
         self.activate_image("mouseEnter")
@@ -918,105 +967,3 @@ class RegularLabel(ctk.CTkLabel):
             font=AssetRegistry.fonts(size)[variant],
             compound="center",
         )
-
-
-# HAY QUE MEJORAR ESTO XD
-class FloatingFeedbackLabel(ctk.CTkLabel):
-    def __init__(self, master, **kwargs):
-        super().__init__(
-            master,
-            text="",
-            corner_radius=10,
-            padx=20,
-            pady=12,
-            font=AssetRegistry.fonts()["bold"],
-            **kwargs,
-        )
-
-        self._after_id = None
-        self.master = master
-
-        self._variants = {
-            MessageType.ERROR: {
-                "bg": "#E53935",
-                "fg": "#FFFFFF",
-            },
-            MessageType.SUCCESS: {
-                "bg": "#43A047",
-                "fg": "#FFFFFF",
-            },
-            MessageType.INFO: {
-                "bg": "#1E88E5",
-                "fg": "#FFFFFF",
-            },
-        }
-
-        # Configuración inicial
-        self.configure(
-            fg_color=self._variants[MessageType.INFO]["bg"],
-            text_color=self._variants[MessageType.INFO]["fg"],
-            justify="left",
-        )
-
-    def show_variant(self, message_type: MessageType, text: str, duration: int = 4000):
-        self.configure(text=text, fg_color=self._variants[message_type]["bg"])
-        self.pack(anchor="nw")
-
-        self._after_id = self.after(duration, self.hide)
-
-    def hide(self):
-        self.place_forget()
-        self.pack_forget()
-
-        if self._after_id:
-            self.after_cancel(self._after_id)
-            self._after_id = None
-
-
-# Label con resaltado para lista de gestos
-class ActivationFeedbackLabel(ctk.CTkLabel):
-    def __init__(
-        self,
-        master,
-        text: str,
-        transition: HighlightTransition,
-        font: ctk.CTkFont | None = None,
-        image: tksvg.SvgImage | None = None,
-        **kwargs,
-    ):
-        super().__init__(
-            master,
-            text=text,  # el espacio es para que el texto no se vea tan pegado al icono
-            font=font,
-            image=image,  # type: ignore
-            fg_color="transparent",
-            compound="left",
-            text_color="#fff",
-            anchor="w",
-            **kwargs,
-        )
-        self.transition = transition
-
-    def normalize(self):
-        self.configure(text_color="#DCE4EE", fg_color="transparent")
-
-    def glow(self):
-        self.configure(
-            fg_color=self.transition.fg_color, text_color=self.transition.text_color
-        )
-
-    def highlight(self):
-        if not self.transition.is_running:
-            self.transition.is_running = True
-            timer = int(self.transition.duration / self.transition.pulses)
-            for i in range(self.transition.pulses):
-                self.after((2 * i) * timer, lambda: self.glow())
-
-                self.after((2 * i + 1) * timer, lambda: self.normalize())
-
-            self.after(
-                (2 * self.transition.pulses) * timer,
-                lambda: setattr(
-                    self.transition, "is_running", not self.transition.is_running
-                ),
-            )
