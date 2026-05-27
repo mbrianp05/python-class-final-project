@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import warnings
@@ -23,9 +24,9 @@ def shorten_middle(str: str, max: int) -> str:
     if len(str) <= max:
         return str
 
-    ends = int(max / 2) + max % 2
+    ends = int(max / 2)
 
-    return str[:ends] + "..." + str[-ends:]
+    return str[:ends] + "..." + str[-ends - max % 2 :]
 
 
 def shorten(str: str, max: int) -> str:
@@ -135,8 +136,8 @@ CONFIG_FILE_NAME = "data.json"
 
 def create_config_file_if_not_exists(filename=CONFIG_FILE_NAME):
     if not os.path.exists(filename):
-        with open(filename, "w"):
-            pass
+        with open(filename, "w") as file:
+            json.dump([], file)
 
 
 def turn_dict_into_gesture(data: Dict[Any, Any]) -> Gesture:
