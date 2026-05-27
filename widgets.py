@@ -8,7 +8,7 @@ from customtkinter import CTkFrame
 from PIL import Image
 
 from actions import get_actions_parameter_type
-from gesture import Gesture, GestureRecognition, HandProfile
+from gesture import Gesture, GestureData, GestureRecognition, HandProfile
 from loader import AssetRegistry
 from parampicker import ParamPicker
 from services import fetch_gestures, remove_gesture, update_gesture
@@ -341,6 +341,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.form_panel.columnconfigure((0, 1), weight=1, pad=30)
         self.form_panel.grid(row=0, column=1, padx=40, pady=(40, 0))
 
+        self.form_buttons = ctk.CTkFrame(self.gesture_info_panel)
+        self.form_buttons.grid(row=3, column=0, sticky="s", columnspan=2)
+
         self.display_current_gesture_selector()
         self.display_name_field()
         self.display_active_hands_selector()
@@ -348,6 +351,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.display_action_selector()
         self.display_save_settings_button()
         self.display_delete_button()
+        self.display_add_new_button()
 
         self._adjust_current_configuration_display()
 
@@ -842,13 +846,13 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
     def display_save_settings_button(self):
         self.save_button = ctk.CTkButton(
-            self.gesture_info_panel,
+            self.form_buttons,
             height=31,
             text="Guardar",
             font=AssetRegistry.fonts()["regular"],
             command=self.save_new_config,
         )
-        self.save_button.grid(row=3, column=0, sticky="ws")
+        self.save_button.grid(row=0, column=0, sticky="ws")
 
     def _remove_local_gesture(self):
         if self.current_gesture is None:
@@ -883,13 +887,38 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
     def display_delete_button(self):
         self.delete_button = ctk.CTkButton(
-            self.gesture_info_panel,
+            self.form_buttons,
             height=31,
             text="Eliminar",
             font=AssetRegistry.fonts()["regular"],
             command=self._delete_current_gesture,
         )
-        self.delete_button.grid(row=3, column=1, sticky="ws")
+        self.delete_button.grid(row=0, column=1, sticky="ws")
+
+    def _new_gesture(self) -> None:
+        default_action = Action.TAKE_SCREENSHOT
+        default_settings = GestureData(
+            hands=(True, False),
+            visibleFingers=([], []),
+            profile=(None, None),
+        )
+        new_gesture = Gesture(
+            id=-1,  # id temporal; add_gesture asigna el definitivo
+            name="Nuevo gesto",
+            settings=default_settings,
+            effect=default_action,
+            param=None,
+        )
+
+    def display_add_new_button(self):
+        self.add_new_button = ctk.CTkButton(
+            self.form_buttons,
+            height=31,
+            text="Nuevo gesto",
+            font=AssetRegistry.fonts()["regular"],
+            command=self._new_gesture,
+        )
+        self.add_new_button.grid(row=0, column=2, sticky="ws")
 
 
 class ImagesEffectLabel(ctk.CTkLabel):
