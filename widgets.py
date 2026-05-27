@@ -240,6 +240,12 @@ class Sidebar(CTkFrame):
 
 
 class Camera(ctk.CTkFrame):
+    # Colores del badge de bloqueo
+    _BADGE_BLOCKED_BG = "#391010"
+    _BADGE_BLOCKED_TEXT = "#ff6b6b"
+    _BADGE_OK_BG = "#0f2e1e"
+    _BADGE_OK_TEXT = "#4caf93"
+
     def __init__(self, master):
         super().__init__(master)
 
@@ -247,14 +253,59 @@ class Camera(ctk.CTkFrame):
 
         self.set_layout()
 
-        self.camera_frames = ctk.CTkLabel(self, text="<Gesture Recognition State>")
+        self.camera_frames = ctk.CTkLabel(self, text="")
         self.camera_frames.grid(row=0, column=0, sticky="nswe")
+
+        self._build_detection_badge()
 
         # self.init_camera()
 
     def set_layout(self):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
+
+    def _build_detection_badge(self) -> None:
+        """Crea el badge superpuesto que indica el estado de la detección."""
+        fonts = AssetRegistry.fonts(14)
+        icons = AssetRegistry.icons()
+
+        self.detection_badge = ctk.CTkFrame(
+            self,
+            corner_radius=20,
+            fg_color=self._BADGE_OK_BG,
+            border_width=1,
+            border_color=self._BADGE_OK_TEXT,
+        )
+
+        self._badge_icon = ctk.CTkLabel(
+            self.detection_badge,
+            text="",
+            image=icons["generic-gesture"],  # type: ignore
+            fg_color="transparent",
+        )
+        self._badge_icon.grid(row=0, column=0, padx=(10, 4), pady=4)
+
+        self._badge_label = ctk.CTkLabel(
+            self.detection_badge,
+            text="Detección activa",
+            font=fonts["regular"],
+            text_color=self._BADGE_OK_TEXT,
+            fg_color="transparent",
+        )
+        self._badge_label.grid(row=0, column=1, padx=(0, 12), pady=4)
+
+        self.detection_badge.place(relx=1.0, rely=0.0, anchor="ne", x=-12, y=12)
+
+    def _update_detection_badge(self) -> None:
+        """Sincroniza el badge con can_do_gesture del recognizer en cada frame."""
+        blocked = not self.recognizer.can_do_gesture
+
+        bg = self._BADGE_BLOCKED_BG if blocked else self._BADGE_OK_BG
+        fg = self._BADGE_BLOCKED_TEXT if blocked else self._BADGE_OK_TEXT
+        text = "Detección bloqueada" if blocked else "Detección activa"
+
+        self.detection_badge.configure(fg_color=bg, border_color=fg)
+        self._badge_label.configure(text=text, text_color=fg)
 
     def init_camera(self):
         self.recognizer = GestureRecognition(fetch_gestures())
@@ -276,9 +327,8 @@ class Camera(ctk.CTkFrame):
                 image=ctk.CTkImage(img, size=(600, 600)), compound="top", pady=5
             )
 
-        self.recognizer.exec_on_detection(
-            frame
-        )  # Llamar cada vez que el frame se actualiza por eso se ejecuta en esta funcion
+        self.recognizer.exec_on_detection(frame)
+        self._update_detection_badge()
         self.camera_frames.after(200, self.load_frames)
 
     def on_closing(self):
@@ -332,21 +382,32 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         self.set_layout()
 
-        self.gesture_info_panel = ctk.CTkFrame(self, fg_color="transparent", width=340)
-        self.gesture_info_panel.rowconfigure((0, 1, 2), pad=50)
-        self.gesture_info_panel.rowconfigure((3), weight=1)
-        self.gesture_info_panel.grid(
-            row=0, column=0, sticky="wns", padx=40, pady=(40, 0)
+        # Columna izquierda: envuelve gesture_info_panel + form_buttons
+        # rowconfigure con weight=1 en row=1 empuja form_buttons al fondo
+        self._left_col = ctk.CTkFrame(self, fg_color="transparent")
+        self._left_col.rowconfigure(0, weight=1)  # info panel se estira
+        self._left_col.rowconfigure(1, weight=0)  # botones al fondo
+        self._left_col.columnconfigure(0, weight=1)
+        self._left_col.grid(row=0, column=0, sticky="nswe", padx=40, pady=(40, 40))
+
+        self.gesture_info_panel = ctk.CTkFrame(
+            self._left_col, fg_color="transparent", width=340
         )
+        self.gesture_info_panel.rowconfigure((0, 1, 2, 3), pad=50)
+        # weight=1 en columna 0 hace que todos los widgets con sticky="we" ocupen el mismo ancho
+        self.gesture_info_panel.columnconfigure(0, weight=1)
+        self.gesture_info_panel.grid(row=0, column=0, sticky="nswe")
 
         self.form_panel = ctk.CTkFrame(self, fg_color="transparent", width=600)
         self.form_panel.columnconfigure((0, 1), weight=1, pad=30)
         self.form_panel.grid(row=0, column=1, padx=40, pady=(40, 0))
 
+        # form_buttons en _left_col row=1 → siempre al fondo de la columna izquierda
         self.form_buttons = ctk.CTkFrame(
-            self.gesture_info_panel, border_color="#262624", border_width=2
+            self._left_col, border_color="#262624", border_width=2
         )
-        self.form_buttons.grid(row=3, column=0, sticky="ws", columnspan=2)
+        self.form_buttons.columnconfigure((0, 1, 2), weight=1)
+        self.form_buttons.grid(row=1, column=0, sticky="we", pady=(10, 0))
 
         self.display_current_gesture_selector()
         self.display_name_field()
@@ -373,13 +434,13 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.action_selector = ctk.CTkComboBox(
             self.gesture_info_panel,
             values=values,
-            width=360,
+            width=10,  # mínimo; sticky="we" + columnconfigure weight=1 lo expande
             height=32,
             state="readonly",
             font=AssetRegistry.fonts()["regular"],
             command=lambda _: self.change_action(),
         )
-        self.action_selector.grid(row=1, column=0, columnspan=2, sticky="we")
+        self.action_selector.grid(row=2, column=0, sticky="we")
 
         self._adjust_current_gesture_effect()
         paramtype = self.get_paramtype_for_current_action()
@@ -389,7 +450,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             paramtype=paramtype,
             initial_value=self.get_current_param_value(),
         )
-        self.param_picker.grid(row=2, column=0, sticky="w", columnspan=2)
+        self.param_picker.grid(row=3, column=0, sticky="we")
 
     def change_action(self):
         if self.current_gesture is None:
@@ -422,17 +483,30 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.param_picker.set_param_type(required_param_type, value)
 
     def display_name_field(self):
-        # APLICAR MAX LENGTH !!!!
+        self.name_field_box = ctk.CTkFrame(self.gesture_info_panel)
+        # columna 0 = label (fijo), columna 1 = entry (se expande)
+        self.name_field_box.columnconfigure(1, weight=1)
+
         text = "" if self.current_gesture is None else self.current_gesture.name
         self.name_field = ctk.CTkEntry(
-            self.gesture_info_panel,
+            self.name_field_box,
             height=31,
-            width=220,
             font=AssetRegistry.fonts()["regular"],
         )
         self.name_field.insert(0, text)
-        self.name_field.grid(row=0, column=1, sticky="we")
+        self.name_field.grid(row=0, column=1, padx=(0, 10), pady=10, sticky="we")
         self.name_field.bind("<KeyRelease>", lambda _: self._update_name())
+
+        self.name_label = ctk.CTkLabel(
+            self.name_field_box,
+            text="Nombre",
+            compound="left",
+            font=AssetRegistry.fonts()["regular"],
+            image=AssetRegistry.icons()["mark"],  # type: ignore
+        )
+        self.name_label.grid(row=0, column=0, padx=10, pady=10)
+
+        self.name_field_box.grid(row=1, column=0, sticky="we")
 
     def check_name(self):
         if self.current_gesture is None:
@@ -472,7 +546,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.gesture_selector = ctk.CTkComboBox(
             self.gesture_info_panel,
             height=31,
-            width=220,
+            width=10,  # mínimo; sticky="we" + columnconfigure weight=1 lo expande
             command=lambda _: self.set_current_gesture(),
             state="readonly",
             font=AssetRegistry.fonts()["regular"],
@@ -483,7 +557,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.gesture_selector.grid(
             row=0,
             column=0,
-            padx=(0, 15),
+            padx=(0, 0),
             sticky="we",
         )
 
@@ -871,12 +945,16 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.save_button = ctk.CTkButton(
             self.form_buttons,
             height=31,
-            width=100,
+            width=120,
             text="Guardar",
+            text_color="#4caf93",
+            fg_color="#2a3632",
+            hover_color="#343d3a",
             font=AssetRegistry.fonts()["regular"],
+            image=AssetRegistry.icons()["save"],
             command=self.save_new_config,
         )
-        self.save_button.grid(row=0, column=0, sticky="ws", padx=10, pady=10)
+        self.save_button.grid(row=0, column=0, sticky="we", padx=8, pady=10)
 
     def _remove_local_gesture(self):
         if self.current_gesture is None:
@@ -913,12 +991,16 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.delete_button = ctk.CTkButton(
             self.form_buttons,
             height=31,
-            width=100,
+            width=120,
             text="Eliminar",
+            fg_color="#391010",
+            text_color="#ff6b6b",
+            hover_color="#4d1515",
             font=AssetRegistry.fonts()["regular"],
+            image=AssetRegistry.icons()["trash"],
             command=self._delete_current_gesture,
         )
-        self.delete_button.grid(row=0, column=1, sticky="ws", padx=10, pady=10)
+        self.delete_button.grid(row=0, column=1, sticky="we", padx=8, pady=10)
 
     def _new_gesture(self) -> None:
         default_action = Action.OPEN_FOLDER
@@ -953,7 +1035,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             command=self._new_gesture,
             image=AssetRegistry.icons()["add"],
         )
-        self.add_new_button.grid(row=0, column=2, sticky="ws", padx=10, pady=10)
+        self.add_new_button.grid(row=0, column=2, sticky="we", padx=8, pady=10)
 
 
 class ImagesEffectLabel(ctk.CTkLabel):
@@ -991,7 +1073,7 @@ class CustomButton(ImagesEffectLabel):
         command: Callable[[], Any] | None = None,
     ):
         super().__init__(master, text=text, images_pack=images_pack)
-        self.configure(cursor="hand2", fg_color="#40403e", width=46)
+        self.configure(cursor="hand2", fg_color="#2c2b28", width=46)
 
         self.command = command
         self.images_pack = images_pack
@@ -1010,7 +1092,7 @@ class CustomButton(ImagesEffectLabel):
 
     def on_leave(self, _):
         self.activate_image("noEvent")
-        self.configure(fg_color="#40403e")
+        self.configure(fg_color="#2c2b28")
 
     def on_enter(self, _):
         self.activate_image("mouseEnter")
