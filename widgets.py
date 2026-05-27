@@ -247,7 +247,7 @@ class Camera(ctk.CTkFrame):
 
         self.set_layout()
 
-        self.camera_frames = ctk.CTkLabel(self, text="")
+        self.camera_frames = ctk.CTkLabel(self, text="<Gesture Recognition State>")
         self.camera_frames.grid(row=0, column=0, sticky="nswe")
 
         # self.init_camera()
@@ -272,12 +272,14 @@ class Camera(ctk.CTkFrame):
         if ret:
             cv2image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(cv2image)
-            self.camera_frames.configure(image=ctk.CTkImage(img, size=(600, 600)))
+            self.camera_frames.configure(
+                image=ctk.CTkImage(img, size=(600, 600)), compound="top", pady=5
+            )
 
         self.recognizer.exec_on_detection(
             frame
         )  # Llamar cada vez que el frame se actualiza por eso se ejecuta en esta funcion
-        self.camera_frames.after(20, self.load_frames)
+        self.camera_frames.after(200, self.load_frames)
 
     def on_closing(self):
         if getattr(self, "cap", None) is not None:
