@@ -341,8 +341,10 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.form_panel.columnconfigure((0, 1), weight=1, pad=30)
         self.form_panel.grid(row=0, column=1, padx=40, pady=(40, 0))
 
-        self.form_buttons = ctk.CTkFrame(self.gesture_info_panel)
-        self.form_buttons.grid(row=3, column=0, sticky="s", columnspan=2)
+        self.form_buttons = ctk.CTkFrame(
+            self.gesture_info_panel, border_color="#262624", border_width=2
+        )
+        self.form_buttons.grid(row=3, column=0, sticky="ws", columnspan=2)
 
         self.display_current_gesture_selector()
         self.display_name_field()
@@ -830,6 +832,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
             outer_state = self.param_picker.get_state()
 
             if inner_state.is_valid and outer_state.is_valid:
+                self.delete_button.configure(state=ctk.NORMAL)
+                self.add_new_button.configure(state=ctk.NORMAL)
+
                 self.current_gesture.param = self.param_picker.get_value()
 
                 if self.current_gesture.id != -1:
@@ -864,11 +869,12 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.save_button = ctk.CTkButton(
             self.form_buttons,
             height=31,
+            width=100,
             text="Guardar",
             font=AssetRegistry.fonts()["regular"],
             command=self.save_new_config,
         )
-        self.save_button.grid(row=0, column=0, sticky="ws")
+        self.save_button.grid(row=0, column=0, sticky="ws", padx=10, pady=10)
 
     def _remove_local_gesture(self):
         if self.current_gesture is None:
@@ -905,11 +911,12 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.delete_button = ctk.CTkButton(
             self.form_buttons,
             height=31,
+            width=100,
             text="Eliminar",
             font=AssetRegistry.fonts()["regular"],
             command=self._delete_current_gesture,
         )
-        self.delete_button.grid(row=0, column=1, sticky="ws")
+        self.delete_button.grid(row=0, column=1, sticky="ws", padx=10, pady=10)
 
     def _new_gesture(self) -> None:
         default_action = Action.OPEN_FOLDER
@@ -942,8 +949,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
             text="Nuevo gesto",
             font=AssetRegistry.fonts()["regular"],
             command=self._new_gesture,
+            image=AssetRegistry.icons()["add"],
         )
-        self.add_new_button.grid(row=0, column=2, sticky="ws")
+        self.add_new_button.grid(row=0, column=2, sticky="ws", padx=10, pady=10)
 
 
 class ImagesEffectLabel(ctk.CTkLabel):

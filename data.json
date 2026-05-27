@@ -106,5 +106,19 @@
       "profile": ["palm", null]
     },
     "param": "C:\\Program Files\\Git\\git-cmd.exe"
+  },
+  {
+    "id": 10,
+    "name": "Canciones",
+    "effect": "open_folder",
+    "settings": {
+      "hands": [true, true],
+      "visibleFingers": [
+        ["thumb", "index_finger"],
+        ["middle_finger", "ring_finger"]
+      ],
+      "profile": [null, "front"]
+    },
+    "param": "D:/Songs"
   }
 ]
