@@ -11,7 +11,7 @@ from actions import get_actions_parameter_type
 from gesture import Gesture, GestureData, GestureRecognition, HandProfile
 from loader import AssetRegistry
 from parampicker import ParamPicker
-from services import fetch_gestures, remove_gesture, update_gesture
+from services import add_gesture, fetch_gestures, remove_gesture, update_gesture
 from uiclasses import MessageType, MouseEventsImagesPack, View
 from utilityclasses import Action, Finger, FormState, ParamType
 from utils import (
@@ -113,7 +113,7 @@ class GestureItem(ctk.CTkFrame):
 
 class Sidebar(CTkFrame):
     _BG_COLOR = "#30302e"
-    _WIDTH = 280
+    _WIDTH = 260
 
     def __init__(self, master, controller):
         super().__init__(master, fg_color="transparent", width=self._WIDTH)
@@ -449,6 +449,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
     # SETEA EL GESTO QUE SE ESTÁ CONFIGURANDO A PARTIR DEL VALOR
     # SELECCIONADO EN EL COMBOBOX DE LOS GESTOS
     def set_current_gesture(self):
+        self.add_new_button.configure(state=ctk.NORMAL)
+        self.delete_button.configure(state=ctk.NORMAL)
+
         gesture_name = self.gesture_selector.get()
         f = list(filter(lambda g: g.name == gesture_name, self.gestures))
 
@@ -457,6 +460,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             return
 
         self.current_gesture = copy.deepcopy(f[0])
+        self._set_current_gesture_selector()
         self._adjust_current_configuration_display()
         self._change_param_type_form()
 
@@ -479,8 +483,17 @@ class SettingsForm(ctk.CTkScrollableFrame):
             sticky="we",
         )
 
-    def _set_current_gesture_selector(self):
-        self.gesture_selector.configure(values=[g.name for g in self.gestures])
+    def _set_current_gesture_selector(self, is_new=False):
+        values = [g.name for g in self.gestures]
+
+        if is_new:
+            values.append("")
+
+        self.gesture_selector.configure(values=values)
+
+        if is_new:
+            self.gesture_selector.set("")
+            return
 
         if self.current_gesture is not None:
             self.gesture_selector.set(self.current_gesture.name)
@@ -677,6 +690,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self._inner_state = FormState(
                 False, "Al menos una de las dos manos debe ser visible en el gesto"
             )
+        else:
+            # Resetear el state
+            self._inner_state = FormState(True, None)
 
         form_fields = {
             "hand_activator": (self.left_hand_activator, self.right_hand_activator),
@@ -802,9 +818,10 @@ class SettingsForm(ctk.CTkScrollableFrame):
         idx = self.index_of_local_gesture()
 
         if idx == -1:
-            return
+            self.gestures.append(self.current_gesture)
+        else:
+            self.gestures[idx] = self.current_gesture
 
-        self.gestures[idx] = self.current_gesture
         self._set_current_gesture_selector()
 
     def save_new_config(self):
@@ -815,14 +832,13 @@ class SettingsForm(ctk.CTkScrollableFrame):
             if inner_state.is_valid and outer_state.is_valid:
                 self.current_gesture.param = self.param_picker.get_value()
 
-                update_gesture(self.current_gesture)
-                # GUARDAR LA REFERENCIA DEL NUEVO GESTO EN LA LISTA DE GESTOS
-                # SE PODIA TAMBEIEN HACER EL fetch_gestures PERO ESO LEE EL JSON
-                # POR LO QUE ES MAS CARO A NIVEL DE RENDIMIENTO
+                if self.current_gesture.id != -1:
+                    update_gesture(self.current_gesture)
+                else:
+                    add_gesture(self.current_gesture)
+
                 self.update_local_gesture()
 
-        # AQUI LA LOGICA PARA CREAR UN NUEVO GESTO
-        # self.display_current_gesture_selector()
         self.feedback()
 
     # PENDIENTE DE IMPLEMENTACIÓN
@@ -896,19 +912,28 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.delete_button.grid(row=0, column=1, sticky="ws")
 
     def _new_gesture(self) -> None:
-        default_action = Action.TAKE_SCREENSHOT
+        default_action = Action.OPEN_FOLDER
         default_settings = GestureData(
-            hands=(True, False),
+            hands=(False, False),
             visibleFingers=([], []),
             profile=(None, None),
         )
-        new_gesture = Gesture(
-            id=-1,  # id temporal; add_gesture asigna el definitivo
+        self.current_gesture = Gesture(
+            id=-1,
             name="Nuevo gesto",
             settings=default_settings,
             effect=default_action,
             param=None,
         )
+
+        self.delete_button.configure(state=ctk.DISABLED)
+        self.add_new_button.configure(state=ctk.DISABLED)
+
+        ptype = get_actions_parameter_type()[self.current_gesture.effect]
+
+        self.param_picker.set_param_type(ptype, None)
+        self._set_current_gesture_selector(is_new=True)
+        self._adjust_current_configuration_display()
 
     def display_add_new_button(self):
         self.add_new_button = ctk.CTkButton(
