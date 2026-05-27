@@ -277,7 +277,7 @@ class Camera(ctk.CTkFrame):
         self.recognizer.exec_on_detection(
             frame
         )  # Llamar cada vez que el frame se actualiza por eso se ejecuta en esta funcion
-        self.camera_frames.after(20, self.load_frames)
+        self.camera_frames.after(200, self.load_frames)
 
     def on_closing(self):
         if getattr(self, "cap", None) is not None:
