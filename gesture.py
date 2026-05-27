@@ -54,7 +54,12 @@ class GestureRecognition:
             url = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
             urllib.request.urlretrieve(url, model_path)
 
-    def init_model(self, model_path="hand_landmarker.task"):
+    def init_model(
+        self,
+        model_path=os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "hand_landmarker.task"
+        ),
+    ):
         self.download_if_not_exists(model_path)
         base_options = python.BaseOptions(model_asset_path=model_path)
 
@@ -62,9 +67,9 @@ class GestureRecognition:
             base_options=base_options,
             running_mode=vision.RunningMode.IMAGE,
             num_hands=2,
-            min_hand_detection_confidence=0.5,
-            min_hand_presence_confidence=0.5,
-            min_tracking_confidence=0.5,
+            min_hand_detection_confidence=0.9,
+            min_hand_presence_confidence=0.9,
+            min_tracking_confidence=0.9,
         )
 
         self.detector = vision.HandLandmarker.create_from_options(self.options)
