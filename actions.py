@@ -30,6 +30,16 @@ def get_actions_parameter_type() -> Dict[Action, ParamType | None]:
         Action.RUN_PROGRAM: ParamType.FILE_PATH,
     }
 
+def get_actions_function() -> Dict[Action, callable]:
+    return {
+        Action.TAKE_SCREENSHOT: take_screenshot,
+        Action.OPEN_FILE: open_file_with_default_app,
+        Action.OPEN_FOLDER: open_explorer_at,
+        Action.SET_VOLUME: set_volume,
+        Action.SET_WIFI_STATE: set_wifi_state,
+        Action.RUN_PROGRAM: run_program,
+    }
+
 
 # abrir el explorador en esa carpeta
 def open_explorer_at(path: str) -> None:
