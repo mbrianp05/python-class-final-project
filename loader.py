@@ -105,6 +105,10 @@ class AssetRegistry:
         "run_program": "./icons/run-program.svg",
         "set_volume": "./icons/set-volume.svg",
         "set_wifi": "./icons/set-wifi.svg",
+        "add": "./icons/add.svg",
+        "save": "./icons/save.svg",
+        "trash": "./icons/trash.svg",
+        "mark": "./icons/mark.svg",
     }
 
     @classmethod
