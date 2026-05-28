@@ -484,7 +484,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
     def display_name_field(self):
         self.name_field_box = ctk.CTkFrame(self.gesture_info_panel)
-        # columna 0 = label (fijo), columna 1 = entry (se expande)
         self.name_field_box.columnconfigure(1, weight=1)
 
         text = "" if self.current_gesture is None else self.current_gesture.name
@@ -492,6 +491,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self.name_field_box,
             height=31,
             font=AssetRegistry.fonts()["regular"],
+            border_color="#181818",
+            fg_color="#181818",
         )
         self.name_field.insert(0, text)
         self.name_field.grid(row=0, column=1, padx=(0, 10), pady=10, sticky="we")
@@ -501,8 +502,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self.name_field_box,
             text="Nombre",
             compound="left",
-            font=AssetRegistry.fonts()["regular"],
-            image=AssetRegistry.icons()["mark"],  # type: ignore
+            font=AssetRegistry.fonts(17)["regular"],
+            image=AssetRegistry.icons(33)["mark"],  # type: ignore
         )
         self.name_label.grid(row=0, column=0, padx=10, pady=10)
 
@@ -948,8 +949,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
             width=120,
             text="Guardar",
             text_color="#4caf93",
-            fg_color="#2a3632",
-            hover_color="#343d3a",
+            hover_color="#2a3632",
+            fg_color="#0f2e1e",
             font=AssetRegistry.fonts()["regular"],
             image=AssetRegistry.icons()["save"],
             command=self.save_new_config,
