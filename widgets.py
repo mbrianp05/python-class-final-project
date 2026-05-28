@@ -247,8 +247,9 @@ class Camera(ctk.CTkFrame):
     _BADGE_OK_BG = "#0f2e1e"
     _BADGE_OK_TEXT = "#4caf93"
 
-    def __init__(self, master):
+    def __init__(self, master, highlighter):
         super().__init__(master)
+        self._highlighter = highlighter
 
         self.configure(fg_color="transparent")
 
@@ -328,7 +329,7 @@ class Camera(ctk.CTkFrame):
                 image=ctk.CTkImage(img, size=(600, 600)), compound="top", pady=5
             )
 
-        self.recognizer.exec_on_detection(frame, self.master.sidebar.highlight_gesture)
+        self.recognizer.exec_on_detection(frame, self._highlighter.highlight_gesture)
         self._update_detection_badge()
         self.camera_frames.after(200, self.load_frames)
 

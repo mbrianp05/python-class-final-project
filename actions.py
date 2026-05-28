@@ -10,7 +10,7 @@
 
 import asyncio
 import subprocess
-from typing import Dict
+from typing import Callable, Dict
 
 from PIL import ImageGrab
 from pycaw.pycaw import AudioUtilities
@@ -30,7 +30,8 @@ def get_actions_parameter_type() -> Dict[Action, ParamType | None]:
         Action.RUN_PROGRAM: ParamType.FILE_PATH,
     }
 
-def get_actions_function() -> Dict[Action, callable]:
+
+def get_actions_function() -> Dict[Action, Callable]:
     return {
         Action.TAKE_SCREENSHOT: take_screenshot,
         Action.OPEN_FILE: open_file_with_default_app,

@@ -43,7 +43,7 @@ class GestureDetectionView(BaseView):
         self.sidebar.grid(column=0, row=0, sticky="ns")
 
     def display_camera(self):
-        self.camera_frame = Camera(self)
+        self.camera_frame = Camera(self, self.sidebar)
         self.camera_frame.grid(row=0, column=1, sticky="nswe")
 
     def on_closing(self):
