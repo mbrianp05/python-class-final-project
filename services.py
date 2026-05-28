@@ -36,6 +36,12 @@ class GestureStore:
     def __init__(self) -> None:
         self._gestures: List[Gesture] = self._load_from_disk()
 
+    # -- Ver sihay gestos ----------------------------------------------------
+
+    def is_empty(self):
+        """Mucho mas barato que hacer la comprobación con el método all"""
+        return len(self._gestures) == 0
+
     # -- Lectura -------------------------------------------------------------
 
     def all(self) -> List[Gesture]:

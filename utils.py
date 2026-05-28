@@ -215,7 +215,7 @@ def get_repr_for_action(action: Action) -> str:
 
 def get_action_from_repr(repr: str) -> Action:
     dict = {value: key for key, value in action_repr_dic.items()}
-    return dict[repr]
+    return get_or_default(dict, repr, Action.OPEN_FOLDER)
 
 
 hand_profile_repr_dic = {

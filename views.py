@@ -2,11 +2,14 @@ import abc
 
 import customtkinter as ctk
 
+from services import GestureStore
 from utils import get_color_palette
 from widgets import Camera, SettingsForm, SettingsHeader, Sidebar
 
 
 class BaseView(ctk.CTkFrame, abc.ABC):
+    _MAIN = False
+
     @abc.abstractmethod
     def on_closing(self):
         """Lo que ocurre cuando se cierra la aplicacion"""
@@ -20,7 +23,7 @@ class GestureDetectionView(BaseView):
     def __init__(self, master):
         super().__init__(master, fg_color=get_color_palette()["bg"])
 
-        self.main = True
+        self._MAIN = not GestureStore.get().is_empty()
         self.set_layout()
 
     def highlight_gesture(self, event):
@@ -53,6 +56,8 @@ class GestureDetectionView(BaseView):
 class ConfigureGesturesView(BaseView):
     def __init__(self, master):
         super().__init__(master, fg_color=get_color_palette()["bg"])
+
+        self._MAIN = GestureStore.get().is_empty()
 
         self.set_layout()
         self.display_header()

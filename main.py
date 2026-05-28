@@ -44,7 +44,7 @@ class App(ctk.CTk):
         main: View | None = None
 
         for name, view in self.views.items():
-            if getattr(view, "is_main", False) is True:
+            if view._MAIN is True:
                 main = name
 
         if main is None:
