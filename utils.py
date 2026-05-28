@@ -113,7 +113,7 @@ def save_photo_path() -> str:
     default_extension = ".png"
 
     now = datetime.now()
-    sample_name = now.strftime("%Y%m%d%_H:%M:%S") + default_extension
+    sample_name = now.strftime("%Y%m%d_%H%M%S") + default_extension
 
     file_path = filedialog.asksaveasfilename(
         initialdir="/",
