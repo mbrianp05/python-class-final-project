@@ -327,7 +327,7 @@ class Camera(ctk.CTkFrame):
                 image=ctk.CTkImage(img, size=(600, 600)), compound="top", pady=5
             )
 
-        self.recognizer.exec_on_detection(frame)
+        self.recognizer.exec_on_detection(frame, self.master.sidebar.highlight_gesture)
         self._update_detection_badge()
         self.camera_frames.after(200, self.load_frames)
 

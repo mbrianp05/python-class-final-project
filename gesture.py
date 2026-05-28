@@ -9,6 +9,7 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 from utilityclasses import Action, Finger, HandProfile
+from actions import get_actions_function
 
 
 # En esta clase se guarda toda la data
@@ -20,6 +21,15 @@ class GestureData:
     hands: tuple[bool, bool]
     visibleFingers: Tuple[List[Finger], List[Finger]] = ([], [])
     profile: Tuple[HandProfile | None, HandProfile | None] = (None, None)
+
+    def __eq__(self, other):
+        if not isinstance(other, GestureData):
+            # return NotImplemented
+            raise TypeError()
+        return (
+            self.hands == other.hands and self.visibleFingers == other.visibleFingers
+            # and self.profile == other.profile
+        )
 
 
 # Cuando el usuario configura un gesto como por ejemplo
@@ -90,7 +100,12 @@ class GestureRecognition:
     # Se analiza el frame y si cunple cierta condicion se
     # vuelve True la prop can_do_gesture
     def _check_to_enable_gestures(self, frame):
-        self.can_do_gesture = True
+        self.can_do_gesture = (
+            True
+            if (self.current_data is not None)
+            and (self.last_data is None or self.current_data != self.last_data)
+            else False
+        )
 
     # PRUEBA ESTA FUNCION Y DEBUGGEA LO QUE DEVUELVE
     # Develve la info del frame actual
@@ -200,7 +215,22 @@ class GestureRecognition:
 
     # Método principal, se encarga de manejar la lógica de ejecución
     # de los gestos
-    def exec_on_detection(self, frame):
+    def exec_on_detection(self, frame, highlight_gesture):
+        self.current_data = self._retrieve_gesture_data(frame)
+        self._check_to_enable_gestures(frame)
+
+        if self.can_do_gesture:
+            for i, g in enumerate(self.gestures):
+                if self.current_data == g.settings:
+                    if g.param is None:
+                        get_actions_function()[g.effect]()
+                    else:
+                        get_actions_function()[g.effect](g.param)
+                    highlight_gesture(i)
+                    break
+
+        self.can_do_gesture = False
+        self.last_data = self.current_data
         # Llamar a __check_to_enable_gestures si la prop can_do_gesture es True entonces ->
         # Obtener el GestureData info del frame actual con el metood __retrieve_gesture_data
         # Si es diferente a la anterior
@@ -208,4 +238,4 @@ class GestureRecognition:
         # que encuentre
 
         # cambiar self.can_do_gesture a False hasta que la condicion necesaria se cumpla
-        self._retrieve_gesture_data(frame)
+        # self._retrieve_gesture_data(frame)
