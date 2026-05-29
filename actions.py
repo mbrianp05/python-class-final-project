@@ -83,7 +83,5 @@ def take_screenshot() -> None:
     screenshot = ImageGrab.grab()
     path_plus_name = utils.save_photo_path()
 
-    print(path_plus_name)
-
     if path_plus_name:
         screenshot.save(path_plus_name)

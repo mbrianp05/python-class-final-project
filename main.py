@@ -4,6 +4,7 @@ import customtkinter as ctk
 
 from loader import AssetRegistry
 from uiclasses import View
+from universe import Navigator, Universe
 from utils import (
     create_config_file_if_not_exists,
     get_or_default,
@@ -18,7 +19,7 @@ create_config_file_if_not_exists()
 supress_warnings()
 
 
-class App(ctk.CTk):
+class App(ctk.CTk, Navigator):
     def __init__(self):
         super().__init__()
 
@@ -27,16 +28,18 @@ class App(ctk.CTk):
         self._views_classes: Dict[View, type[BaseView]] = {}
         self._views_instances: Dict[View, BaseView] = {}
 
-        self.set_views()
+        Universe.rise().compass(self)
+
+        self._set_views()
         self.maximize_window()
 
-    def set_views(self):
+    def _set_views(self) -> None:
         self._views_classes[View.DETECTION_VIEW] = GestureDetectionView
         self._views_classes[View.SETTINGS_VIEW] = ConfigureGesturesView
 
-        self.show_main()
+        self._show_main()
 
-    def show_main(self):
+    def _show_main(self) -> None:
         main: View | None = None
 
         for name, cls in self._views_classes.items():
@@ -49,9 +52,12 @@ class App(ctk.CTk):
         if main is None:
             return
 
-        self.show(main)
+        self._show(main)
 
-    def show(self, active_view):
+    def navigate(self, destination: View) -> None:
+        self._show(destination)
+
+    def _show(self, active_view: View) -> None:
         for view in self._views_instances.values():
             view.pack_forget()
 
@@ -59,7 +65,6 @@ class App(ctk.CTk):
             self._views_instances[active_view] = self._views_classes[active_view](self)
 
         self._views_instances[active_view].pack(fill="both", expand=True)
-        self._views_instances[active_view].update()
 
     def maximize_window(self):
         self._state_before_windows_set_titlebar_color = "zoomed"

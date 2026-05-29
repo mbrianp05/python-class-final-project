@@ -14,7 +14,15 @@ from notifier import Notifier
 from parampicker import ParamPicker
 from services import add_gesture, fetch_gestures, remove_gesture, update_gesture
 from uiclasses import MouseEventsImagesPack, View
-from utilityclasses import Action, Finger, FormState, ParamType
+from universe import Responder, Universe
+from utilityclasses import (
+    Action,
+    Finger,
+    FormState,
+    Modification,
+    ModificationType,
+    ParamType,
+)
 from utils import (
     confirm,
     get_action_from_repr,
@@ -35,53 +43,100 @@ class GestureItem(ctk.CTkFrame):
     def __init__(
         self,
         master,
-        gesture,
-        icon,
-        icon_bg_color: str,
-        description: str,
+        name: str,
+        action: Action,
     ):
         super().__init__(master, fg_color="transparent")
 
+        self._name = name
+        self._action = action
+
         self._is_animating = False
 
-        self._build(gesture, icon, icon_bg_color, description)
+        self._build()
 
-    # ------------------------------------------------------------------ #
-    # Construccion de widgets                                              #
-    # ------------------------------------------------------------------ #
+    def _get_icon(self, action: Action):
+        action_icon_dict = {
+            Action.TAKE_SCREENSHOT: AssetRegistry.icons(name="screenshot"),
+            Action.OPEN_FILE: AssetRegistry.icons(name="open_file"),
+            Action.OPEN_FOLDER: AssetRegistry.icons(name="open_folder"),
+            Action.RUN_PROGRAM: AssetRegistry.icons(name="run_program"),
+            Action.SET_WIFI_STATE: AssetRegistry.icons(name="set_wifi"),
+            Action.SET_VOLUME: AssetRegistry.icons(name="set_volume"),
+        }
 
-    def _build(self, gesture, icon, icon_bg_color: str, description: str) -> None:
-        icon_box = ctk.CTkFrame(self, fg_color=icon_bg_color, corner_radius=10)
+        return get_or_default(action_icon_dict, action, None)
+
+    def _get_color(self, action: Action):
+        color_dict = {
+            Action.SET_WIFI_STATE: "#313e42",
+            Action.TAKE_SCREENSHOT: "#28323f",
+            Action.OPEN_FOLDER: "#2a3632",
+            Action.RUN_PROGRAM: "#43322c",
+            Action.SET_VOLUME: "#3a333e",
+            Action.OPEN_FILE: "#473d2d",
+        }
+
+        return get_or_default(color_dict, action, "transparent")
+
+    def _get_description(self, action: Action):
+        color_dict = {
+            Action.SET_WIFI_STATE: "Cambiar estado del WIFI",
+            Action.TAKE_SCREENSHOT: "Captura de pantalla",
+            Action.OPEN_FOLDER: "Abrir carpeta",
+            Action.RUN_PROGRAM: "Abrir programa",
+            Action.SET_VOLUME: "Cambiar el volumen",
+            Action.OPEN_FILE: "Abrir archivo",
+        }
+
+        return get_or_default(color_dict, action, "")
+
+    def _build(self) -> None:
+        name = self._name
+        action = self._action
+
+        self.icon_box = ctk.CTkFrame(
+            self, fg_color=self._get_color(action), corner_radius=10
+        )
 
         description_frame = ctk.CTkFrame(self, fg_color="transparent")
         description_frame.rowconfigure((0, 1), weight=1)
 
-        name_label = ctk.CTkLabel(
+        self.name_label = ctk.CTkLabel(
             description_frame,
-            text=shorten_gesture_name(gesture.name),
+            text=shorten_gesture_name(name),
             font=AssetRegistry.fonts(16, variant="regular"),
             height=10,
         )
-        name_label.grid(row=0, column=1, sticky="wns", pady=(2, 0))
+        self.name_label.grid(row=0, column=1, sticky="wns", pady=(2, 0))
 
-        desc_label = ctk.CTkLabel(
+        self.desc_label = ctk.CTkLabel(
             description_frame,
-            text=description,
+            text=self._get_description(action),
             font=AssetRegistry.fonts(13, variant="regular"),
             text_color="#999",
             height=10,
         )
-        desc_label.grid(row=1, column=1, sticky="wns", pady=4)
+        self.desc_label.grid(row=1, column=1, sticky="wns", pady=4)
 
-        icon_label = ctk.CTkLabel(icon_box, text="", image=icon, height=36)  # type: ignore
-        icon_label.grid(row=0, column=0, padx=8, sticky="ns")
+        self.icon_label = ctk.CTkLabel(
+            self.icon_box,
+            text="",
+            image=self._get_icon(action),  # type: ignore
+            height=36,
+        )  # type: ignore
+        self.icon_label.grid(row=0, column=0, padx=8, sticky="ns")
 
-        icon_box.grid(row=0, column=0, padx=7, pady=4, rowspan=2)
+        self.icon_box.grid(row=0, column=0, padx=7, pady=4, rowspan=2)
         description_frame.grid(row=0, column=1, sticky="we", padx=7, pady=4)
 
-    # ------------------------------------------------------------------ #
-    # Animacion de parpadeo                                                #
-    # ------------------------------------------------------------------ #
+    def change_name(self, name: str) -> None:
+        self.name_label.configure(text=name)
+
+    def change_description(self, action: Action) -> None:
+        self.desc_label.configure(text=self._get_description(action))
+        self.icon_label.configure(image=self._get_icon(action))
+        self.icon_box.configure(fg_color=self._get_color(action))
 
     def highlight(self) -> None:
         """Parpadea el fondo del item dos veces y vuelve a transparent."""
@@ -103,30 +158,30 @@ class GestureItem(ctk.CTkFrame):
         self.after(self._PULSE_MS, lambda: self._run_pulse(remaining - 1))
 
 
-class Sidebar(CTkFrame):
+class Sidebar(CTkFrame, Responder):
     _BG_COLOR = "#30302e"
     _WIDTH = 260
 
-    def __init__(self, master, controller):
+    def __init__(self, master):
         super().__init__(master, fg_color="transparent", width=self._WIDTH)
         self.grid_propagate(False)
-        self.gestures = fetch_gestures()
 
-        self.controller = controller
+        self._gestures = fetch_gestures()
+
         self._items: List[GestureItem] = []
 
         self.header_font = AssetRegistry.fonts(variant="title")
         self.bold_font = AssetRegistry.fonts(variant="bold")
 
-        self.set_layout()
-        self.create_header()
-        self.create_scrollbar_panel()
+        self._set_layout()
+        self._create_header()
+        self._create_scrollbar_panel()
 
-    def set_layout(self):
+    def _set_layout(self):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
 
-    def create_header(self):
+    def _create_header(self):
         self.header = ctk.CTkFrame(self, corner_radius=0, fg_color=self._BG_COLOR)
         self.header.grid(row=0, column=0, padx=0, sticky="we")
 
@@ -148,64 +203,36 @@ class Sidebar(CTkFrame):
         self.configure_gestures_label = CustomButton(
             self.header,
             images_pack=images_pack,
-            command=lambda: self.controller.show(View.SETTINGS_VIEW),
+            command=lambda: Universe.rise().navigate(View.SETTINGS_VIEW),
         )
         self.configure_gestures_label.grid(row=0, column=0, sticky="wsn")
 
-    def create_scrollbar_panel(self):
+    def _create_scrollbar_panel(self):
         self.scrollable_frame = ctk.CTkScrollableFrame(
             self, orientation="vertical", corner_radius=0, fg_color=self._BG_COLOR
         )
         self.scrollable_frame.columnconfigure(0, weight=1)
         self.scrollable_frame.grid(row=1, column=0, pady=(1, 0), sticky="nsew")
 
-    def _get_icon(self, gesture: Gesture):
-        action_icon_dict = {
-            Action.TAKE_SCREENSHOT: AssetRegistry.icons(name="screenshot"),
-            Action.OPEN_FILE: AssetRegistry.icons(name="open_file"),
-            Action.OPEN_FOLDER: AssetRegistry.icons(name="open_folder"),
-            Action.RUN_PROGRAM: AssetRegistry.icons(name="run_program"),
-            Action.SET_WIFI_STATE: AssetRegistry.icons(name="set_wifi"),
-            Action.SET_VOLUME: AssetRegistry.icons(name="set_volume"),
-        }
+        self.no_gestures_label = ctk.CTkLabel(
+            self.scrollable_frame,
+            text="No hay ningun gesto",
+            font=AssetRegistry.fonts(18, variant="regular"),
+            text_color="#999",
+        )
 
-        return get_or_default(action_icon_dict, gesture.effect, None)
+        self._display_gestures_list()
 
-    def _get_color(self, gesture: Gesture):
-        color_dict = {
-            Action.SET_WIFI_STATE: "#313e42",
-            Action.TAKE_SCREENSHOT: "#28323f",
-            Action.OPEN_FOLDER: "#2a3632",
-            Action.RUN_PROGRAM: "#43322c",
-            Action.SET_VOLUME: "#3a333e",
-            Action.OPEN_FILE: "#473d2d",
-        }
+    def _no_gestures(self) -> None:
+        self.no_gestures_label.grid(row=0, column=0, padx=6, pady=20, sticky="we")
 
-        return get_or_default(color_dict, gesture.effect, "transparent")
+    def _display_gestures_list(self):
+        if len(self._gestures) == 0:
+            self._no_gestures()
 
-    def _get_description(self, gesture: Gesture):
-        color_dict = {
-            Action.SET_WIFI_STATE: "Cambiar estado del WIFI",
-            Action.TAKE_SCREENSHOT: "Captura de pantalla",
-            Action.OPEN_FOLDER: "Abrir carpeta",
-            Action.RUN_PROGRAM: "Abrir programa",
-            Action.SET_VOLUME: "Cambiar el volumen",
-            Action.OPEN_FILE: "Abrir archivo",
-        }
-
-        return get_or_default(color_dict, gesture.effect, "")
-
-    def display_gestures_list(self):
-        if len(self._items) > 0:
-            return
-
-        for i, gesture in enumerate(self.gestures):
+        for i, gesture in enumerate(self._gestures):
             item = GestureItem(
-                self.scrollable_frame,
-                gesture=gesture,
-                icon=self._get_icon(gesture),
-                icon_bg_color=self._get_color(gesture),
-                description=self._get_description(gesture),
+                self.scrollable_frame, name=gesture.name, action=gesture.effect
             )
             item.grid(row=i, column=0, pady=(7, 0), padx=6, sticky="we")
             self._items.append(item)
@@ -214,17 +241,51 @@ class Sidebar(CTkFrame):
         if index < len(self._items):
             self._items[index].highlight()
 
-    def update(self):
-        self.display_gestures_list()
+    def respond(self, modification: Modification[Gesture]) -> None:
+        gesture = modification.data
+        matches = [
+            idx for idx, local in enumerate(self._gestures) if local.id == gesture.id
+        ]
 
-        for item in self._items:
-            item.destroy()
-            del item
+        if modification.type == ModificationType.UPDATE:
+            if len(matches) == 0:
+                return
 
-        self._items = []
+            idx = matches[0]
+            data = self._gestures[idx]
+            item = self._items[idx]
 
-        self.gestures = fetch_gestures()
-        self.display_gestures_list()
+            if data.name != gesture.name:
+                item.change_name(gesture.name)
+
+            if data.effect != gesture.effect:
+                item.change_description(gesture.effect)
+
+        if modification.type == ModificationType.DELETE:
+            if len(matches) == 0:
+                return
+
+            idx = matches[0]
+            item = self._items[idx]
+            self._items.remove(item)
+
+            if len(self._items) == 0:
+                self._no_gestures()
+
+            # Esto es importante para darle tiempo a la app
+            # a borrar el elemento
+            item.after(200, lambda: item.destroy())
+
+        if modification.type == ModificationType.CREATE:
+            self.no_gestures_label.grid_forget()
+
+            item = GestureItem(
+                self.scrollable_frame, name=gesture.name, action=gesture.effect
+            )
+            item.grid(row=len(self._items), column=0, pady=(7, 0), padx=6, sticky="we")
+            self._items.append(item)
+
+        self._gestures = fetch_gestures()
 
 
 class Camera(ctk.CTkFrame):
@@ -323,12 +384,11 @@ class Camera(ctk.CTkFrame):
 
 
 class SettingsHeader(ctk.CTkFrame):
-    def __init__(self, master, controller):
+    def __init__(self, master):
         super().__init__(master)
 
         self.configure(fg_color="transparent")
 
-        self.controller = controller
         self.display_go_back_button()
         self.display_title()
 
@@ -350,7 +410,7 @@ class SettingsHeader(ctk.CTkFrame):
         self.nav_button = CustomButton(
             self,
             images_pack=pack,
-            command=lambda: self.controller.show(View.DETECTION_VIEW),  # type: ignore
+            command=lambda: Universe.rise().navigate(View.DETECTION_VIEW),  # type: ignore
         )
         self.nav_button.grid(row=0, column=0, sticky="wsn")
 
@@ -887,14 +947,20 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self.add_new_button.configure(state=ctk.NORMAL)
 
             self.current_gesture.param = self.param_picker.get_value()
+            modification_type = ModificationType.UPDATE
 
             if self.current_gesture.id != -1:
                 update_gesture(self.current_gesture)
             else:
+                modification_type = ModificationType.CREATE
                 tmp = add_gesture(self.current_gesture)
 
                 if tmp is not None:
                     self.current_gesture = tmp
+
+            Universe.rise().signal(
+                Sidebar, Modification(modification_type, self.current_gesture)
+            )
 
             self.update_local_gesture()
 
@@ -956,6 +1022,10 @@ class SettingsForm(ctk.CTkScrollableFrame):
             return
 
         if result:
+            Universe.rise().signal(
+                Sidebar, Modification(ModificationType.DELETE, self.current_gesture)
+            )
+
             if len(self.gestures) > 0:
                 self._default_gesture()
 

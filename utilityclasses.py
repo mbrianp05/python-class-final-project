@@ -3,6 +3,18 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 
+class ModificationType(StrEnum):
+    CREATE = "create"
+    UPDATE = "update"
+    DELETE = "delete"
+
+
+@dataclass
+class Modification[T]:
+    type: ModificationType
+    data: T
+
+
 class Action(StrEnum):
     SET_VOLUME = "set_volume"
     SET_WIFI_STATE = "set_wifi_state"

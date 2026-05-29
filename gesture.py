@@ -24,12 +24,9 @@ class GestureData:
 
     def __eq__(self, other):
         if not isinstance(other, GestureData):
-            # return NotImplemented
             raise TypeError()
-        return (
-            self.hands == other.hands and self.visibleFingers == other.visibleFingers
-            # and self.profile == other.profile
-        )
+
+        return self.hands == other.hands and self.visibleFingers == other.visibleFingers
 
 
 # Cuando el usuario configura un gesto como por ejemplo

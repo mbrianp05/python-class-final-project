@@ -26,7 +26,7 @@ _COLORS = {
     "error": "#FF5C5C",
     "success": "#4CAF93",
     "text": "#DCE4EE",
-    "subtext": "#8A95A3",
+    "subtext": "#999",
     "border": "#2D3748",
     "input_bg": "#1A2233",
     "button_bg": "#223355",

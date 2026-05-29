@@ -3,6 +3,7 @@ import abc
 import customtkinter as ctk
 
 from services import GestureStore
+from universe import Universe
 from utils import get_color_palette
 from widgets import Camera, SettingsForm, SettingsHeader, Sidebar
 
@@ -14,12 +15,8 @@ class BaseView(ctk.CTkFrame, abc.ABC):
         """Verifica que la vista sea la principal"""
 
     @abc.abstractmethod
-    def on_closing(self):
+    def on_closing(self) -> None:
         """Lo que ocurre cuando se cierra la aplicacion"""
-
-    @abc.abstractmethod
-    def update(self):
-        """Lo que ocurre al navegar al la vista"""
 
 
 class GestureDetectionView(BaseView):
@@ -45,8 +42,11 @@ class GestureDetectionView(BaseView):
         self.rowconfigure(0, weight=1)
 
     def display_sidebar(self):
-        self.sidebar = Sidebar(self, controller=self.master)
+        self.sidebar = Sidebar(self)
         self.sidebar.grid(column=0, row=0, sticky="ns")
+
+        universe = Universe.rise()
+        universe.responder(self.sidebar)
 
     def display_camera(self):
         self.camera_frame = Camera(self, self.sidebar)
@@ -54,9 +54,6 @@ class GestureDetectionView(BaseView):
 
     def on_closing(self):
         self.camera_frame.on_closing()
-
-    def update(self):
-        self.sidebar.update()
 
 
 class ConfigureGesturesView(BaseView):
@@ -80,11 +77,8 @@ class ConfigureGesturesView(BaseView):
         self.form.grid(row=1, column=0, pady=0, sticky="wens")
 
     def display_header(self):
-        self.header = SettingsHeader(self, controller=self.master)
+        self.header = SettingsHeader(self)
         self.header.grid(row=0, column=0, sticky="nwse")
-
-    def update(self):
-        pass
 
     def on_closing(self):
         pass
