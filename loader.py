@@ -3,13 +3,15 @@ from typing import Dict, Literal
 import customtkinter as ctk
 import tksvg
 
+from utils import get_or_default
+
 FontMap = Dict[str, ctk.CTkFont]
 IconMap = Dict[str, tksvg.SvgImage]
 
 
 class AssetRegistry:
     _fonts_cache: FontMap = {}
-    _icons_cache: Dict[int, IconMap] = {}
+    _icons_cache: IconMap = {}
 
     _SIZES = {
         "title": 25,
@@ -65,13 +67,17 @@ class AssetRegistry:
     }
 
     @classmethod
-    def icons(cls, scale: int = 25) -> IconMap:
-        if scale not in cls._icons_cache:
-            cls._icons_cache[scale] = {
-                name: tksvg.SvgImage(file=path, scaletoheight=scale)
-                for name, path in cls._ICON_DEFINITIONS.items()
-            }
-        return cls._icons_cache[scale]
+    def icons(cls, name: str, scale: int = 25) -> tksvg.SvgImage:
+        hash = str(scale) + name
+        path = get_or_default(cls._ICON_DEFINITIONS, name, None)
+
+        if path is None:
+            raise ValueError(f"Icon {name} does not exists")
+
+        if hash not in cls._icons_cache:
+            cls._icons_cache[hash] = tksvg.SvgImage(file=path, scaletoheight=scale)
+
+        return cls._icons_cache[hash]
 
 
 def load_fonts_files() -> None:
@@ -84,5 +90,5 @@ def get_fonts(
     return AssetRegistry.fonts(size, variant)
 
 
-def get_icons(scale: int = 25) -> IconMap:
-    return AssetRegistry.icons(scale)
+def get_icons(name: str, scale: int = 25) -> tksvg.SvgImage:
+    return AssetRegistry.icons(name, scale)

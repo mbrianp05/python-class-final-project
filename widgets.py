@@ -115,8 +115,6 @@ class Sidebar(CTkFrame):
         self.controller = controller
         self._items: List[GestureItem] = []
 
-        self.icons = AssetRegistry.icons()
-
         self.header_font = AssetRegistry.fonts(variant="title")
         self.bold_font = AssetRegistry.fonts(variant="bold")
 
@@ -142,11 +140,9 @@ class Sidebar(CTkFrame):
         )
         self.header_label.grid(row=0, column=1, pady=(0, 1), sticky="wens", padx=15)
 
-        icons = self.icons  # ya en caché
-
         images_pack = MouseEventsImagesPack(
-            noEvent=icons["gear"],
-            mouseEnter=icons["gear_darker"],
+            noEvent=AssetRegistry.icons("gear"),
+            mouseEnter=AssetRegistry.icons("gear_darker"),
         )
 
         self.configure_gestures_label = CustomButton(
@@ -165,12 +161,12 @@ class Sidebar(CTkFrame):
 
     def _get_icon(self, gesture: Gesture):
         action_icon_dict = {
-            Action.TAKE_SCREENSHOT: self.icons["screenshot"],
-            Action.OPEN_FILE: self.icons["open_file"],
-            Action.OPEN_FOLDER: self.icons["open_folder"],
-            Action.RUN_PROGRAM: self.icons["run_program"],
-            Action.SET_WIFI_STATE: self.icons["set_wifi"],
-            Action.SET_VOLUME: self.icons["set_volume"],
+            Action.TAKE_SCREENSHOT: AssetRegistry.icons(name="screenshot"),
+            Action.OPEN_FILE: AssetRegistry.icons(name="open_file"),
+            Action.OPEN_FOLDER: AssetRegistry.icons(name="open_folder"),
+            Action.RUN_PROGRAM: AssetRegistry.icons(name="run_program"),
+            Action.SET_WIFI_STATE: AssetRegistry.icons(name="set_wifi"),
+            Action.SET_VOLUME: AssetRegistry.icons(name="set_volume"),
         }
 
         return get_or_default(action_icon_dict, gesture.effect, None)
@@ -259,8 +255,6 @@ class Camera(ctk.CTkFrame):
 
     def _build_detection_badge(self) -> None:
         """Crea el badge superpuesto que indica el estado de la detección."""
-        icons = AssetRegistry.icons()
-
         self.detection_badge = ctk.CTkFrame(
             self,
             corner_radius=20,
@@ -272,7 +266,7 @@ class Camera(ctk.CTkFrame):
         self._badge_icon = ctk.CTkLabel(
             self.detection_badge,
             text="",
-            image=icons["generic-gesture"],  # type: ignore
+            image=AssetRegistry.icons(name="generic-gesture"),  # type: ignore
             fg_color="transparent",
         )
         self._badge_icon.grid(row=0, column=0, padx=(10, 4), pady=4)
@@ -349,10 +343,9 @@ class SettingsHeader(ctk.CTkFrame):
         self.title_label.grid(row=0, column=1, padx=15)
 
     def display_go_back_button(self):
-        icons = AssetRegistry.icons(30)
-
         pack = MouseEventsImagesPack(
-            noEvent=icons["arrow_left"], mouseEnter=icons["arrow_left_darker"]
+            noEvent=AssetRegistry.icons("arrow_left", 30),
+            mouseEnter=AssetRegistry.icons("arrow_left_darker", 30),
         )
         self.nav_button = CustomButton(
             self,
@@ -363,6 +356,8 @@ class SettingsHeader(ctk.CTkFrame):
 
 
 class SettingsForm(ctk.CTkScrollableFrame):
+    _HAND_ICON_SCALE = 260
+
     def __init__(self, master):
         super().__init__(master, orientation="vertical", fg_color="transparent")
 
@@ -509,7 +504,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             text="Nombre",
             compound="left",
             font=AssetRegistry.fonts(17, variant="regular"),
-            image=AssetRegistry.icons(33)["mark"],  # type: ignore
+            image=AssetRegistry.icons("mark", 33),  # type: ignore
         )
         self.name_label.grid(row=0, column=0, padx=10, pady=10)
 
@@ -665,12 +660,13 @@ class SettingsForm(ctk.CTkScrollableFrame):
         return [get_repr_for_action(p) for p in actions]
 
     def display_active_hands_selector(self):
-        icons = AssetRegistry.icons(scale=260)
         left_images_pack = MouseEventsImagesPack(
-            noEvent=icons["hand-1"], mouseEnter=icons["hand-1-darker"]
+            noEvent=AssetRegistry.icons("hand-1", self._HAND_ICON_SCALE),
+            mouseEnter=AssetRegistry.icons("hand-1-darker", self._HAND_ICON_SCALE),
         )
         right_images_pack = MouseEventsImagesPack(
-            noEvent=icons["hand-2"], mouseEnter=icons["hand-2-darker"]
+            noEvent=AssetRegistry.icons("hand-2", self._HAND_ICON_SCALE),
+            mouseEnter=AssetRegistry.icons("hand-2-darker", self._HAND_ICON_SCALE),
         )
 
         self.left_hand_icon = ImagesEffectLabel(
@@ -929,7 +925,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             hover_color="#2a3632",
             fg_color="#0f2e1e",
             font=AssetRegistry.fonts(),
-            image=AssetRegistry.icons()["save"],
+            image=AssetRegistry.icons(name="save"),
             command=self.save_new_config,
         )
         self.save_button.grid(row=0, column=0, sticky="we", padx=8, pady=10)
@@ -983,7 +979,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             text_color="#ff6b6b",
             hover_color="#4d1515",
             font=AssetRegistry.fonts(),
-            image=AssetRegistry.icons()["trash"],
+            image=AssetRegistry.icons(name="trash"),
             command=self._delete_current_gesture,
             state=ctk.NORMAL if not self._is_new else ctk.DISABLED,
         )
@@ -1008,7 +1004,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             text="Nuevo gesto",
             font=AssetRegistry.fonts(),
             command=self._new_gesture,
-            image=AssetRegistry.icons()["add"],
+            image=AssetRegistry.icons("add"),
             state=ctk.NORMAL if not self._is_new else ctk.DISABLED,
         )
         self.add_new_button.grid(row=0, column=2, sticky="we", padx=8, pady=10)

@@ -1,4 +1,4 @@
-from typing import Dict, cast
+from typing import Dict
 
 import customtkinter as ctk
 
@@ -33,14 +33,6 @@ class App(ctk.CTk):
     def set_views(self):
         self._views_classes[View.DETECTION_VIEW] = GestureDetectionView
         self._views_classes[View.SETTINGS_VIEW] = ConfigureGesturesView
-
-        # Esto es temporal
-        self.bind(
-            "<Key>",
-            cast(
-                GestureDetectionView, self._views_classes[View.DETECTION_VIEW]
-            ).highlight_gesture,
-        )
 
         self.show_main()
 
