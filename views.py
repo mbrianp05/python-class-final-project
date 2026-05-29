@@ -24,7 +24,11 @@ class GestureDetectionView(BaseView):
         super().__init__(master, fg_color=get_color_palette()["bg"])
 
         self._MAIN = not GestureStore.get().is_empty()
+
         self.set_layout()
+
+        self.display_sidebar()
+        self.display_camera()
 
     def highlight_gesture(self, event):
         if event.char.isdigit():
@@ -34,9 +38,6 @@ class GestureDetectionView(BaseView):
         self.columnconfigure(0, weight=0, minsize=Sidebar._WIDTH)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
-
-        self.display_sidebar()
-        self.display_camera()
 
     def display_sidebar(self):
         self.sidebar = Sidebar(self, controller=self.master)
