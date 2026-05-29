@@ -366,9 +366,8 @@ class SettingsHeader(ctk.CTkFrame):
 
 class SettingsForm(ctk.CTkScrollableFrame):
     def __init__(self, master):
-        super().__init__(master, orientation="vertical")
+        super().__init__(master, orientation="vertical", fg_color="transparent")
 
-        self.configure(fg_color="transparent")
         self.gestures = fetch_gestures()
 
         self._is_new = False
@@ -377,11 +376,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         self.set_layout()
 
-        # Columna izquierda: envuelve gesture_info_panel + form_buttons
-        # rowconfigure con weight=1 en row=1 empuja form_buttons al fondo
         self._left_col = ctk.CTkFrame(self, fg_color="transparent")
-        self._left_col.rowconfigure(0, weight=1)  # info panel se estira
-        self._left_col.rowconfigure(1, weight=0)  # botones al fondo
+        self._left_col.rowconfigure(0, weight=1)
+        self._left_col.rowconfigure(1, weight=0)
         self._left_col.columnconfigure(0, weight=1)
         self._left_col.grid(row=0, column=0, sticky="nswe", padx=40, pady=(40, 40))
 
@@ -389,7 +386,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self._left_col, fg_color="transparent", width=340
         )
         self.gesture_info_panel.rowconfigure((0, 1, 2, 3), pad=50)
-        # weight=1 en columna 0 hace que todos los widgets con sticky="we" ocupen el mismo ancho
         self.gesture_info_panel.columnconfigure(0, weight=1)
         self.gesture_info_panel.grid(row=0, column=0, sticky="nswe")
 
@@ -414,7 +410,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.display_add_new_button()
 
         self.notifier = Notifier(self)
-
         self._adjust_current_configuration_display()
 
     def _empty_gesture(self):
