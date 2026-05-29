@@ -59,7 +59,7 @@ class GestureItem(ctk.CTkFrame):
         name_label = ctk.CTkLabel(
             description_frame,
             text=shorten_gesture_name(gesture.name),
-            font=AssetRegistry.fonts(16)["regular"],
+            font=AssetRegistry.fonts(16, variant="regular"),
             height=10,
         )
         name_label.grid(row=0, column=1, sticky="wns", pady=(2, 0))
@@ -67,7 +67,7 @@ class GestureItem(ctk.CTkFrame):
         desc_label = ctk.CTkLabel(
             description_frame,
             text=description,
-            font=AssetRegistry.fonts(13)["regular"],
+            font=AssetRegistry.fonts(13, variant="regular"),
             text_color="#999",
             height=10,
         )
@@ -116,10 +116,9 @@ class Sidebar(CTkFrame):
         self._items: List[GestureItem] = []
 
         self.icons = AssetRegistry.icons()
-        fonts = AssetRegistry.fonts()
 
-        self.header_font = fonts["title"]
-        self.bold_font = fonts["bold"]
+        self.header_font = AssetRegistry.fonts(variant="title")
+        self.bold_font = AssetRegistry.fonts(variant="bold")
 
         self.set_layout()
         self.create_header()
@@ -260,7 +259,6 @@ class Camera(ctk.CTkFrame):
 
     def _build_detection_badge(self) -> None:
         """Crea el badge superpuesto que indica el estado de la detección."""
-        fonts = AssetRegistry.fonts(14)
         icons = AssetRegistry.icons()
 
         self.detection_badge = ctk.CTkFrame(
@@ -282,7 +280,7 @@ class Camera(ctk.CTkFrame):
         self._badge_label = ctk.CTkLabel(
             self.detection_badge,
             text="Detección activa",
-            font=fonts["regular"],
+            font=AssetRegistry.fonts(variant="regular"),
             text_color=self._BADGE_OK_TEXT,
             fg_color="transparent",
         )
@@ -344,7 +342,7 @@ class SettingsHeader(ctk.CTkFrame):
         self.title_label = ctk.CTkLabel(
             self,
             text="Configurar gestos",
-            font=AssetRegistry.fonts()["title"],
+            font=AssetRegistry.fonts(variant="title"),
             fg_color="transparent",
             height=50,
         )
@@ -448,7 +446,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             width=10,  # mínimo; sticky="we" + columnconfigure weight=1 lo expande
             height=32,
             state="readonly",
-            font=AssetRegistry.fonts()["regular"],
+            font=AssetRegistry.fonts(),
             command=lambda _: self.change_action(),
         )
         self.action_selector.grid(row=2, column=0, sticky="we")
@@ -498,7 +496,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.name_field = ctk.CTkEntry(
             self.name_field_box,
             height=31,
-            font=AssetRegistry.fonts()["regular"],
+            font=AssetRegistry.fonts(),
             border_color="#181818",
             fg_color="#181818",
         )
@@ -510,7 +508,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self.name_field_box,
             text="Nombre",
             compound="left",
-            font=AssetRegistry.fonts(17)["regular"],
+            font=AssetRegistry.fonts(17, variant="regular"),
             image=AssetRegistry.icons(33)["mark"],  # type: ignore
         )
         self.name_label.grid(row=0, column=0, padx=10, pady=10)
@@ -554,7 +552,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             width=10,
             command=lambda _: self.set_current_gesture(),
             state="readonly",
-            font=AssetRegistry.fonts()["regular"],
+            font=AssetRegistry.fonts(),
         )
 
         self._set_current_gesture_selector()
@@ -692,7 +690,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 self.form_panel,
                 text="",
                 command=self.update_config,
-                font=AssetRegistry.fonts()["regular"],
+                font=AssetRegistry.fonts(),
             )
             ch.grid(row=1, column=i, pady=10)
             checkboxes.append(ch)
@@ -700,8 +698,10 @@ class SettingsForm(ctk.CTkScrollableFrame):
         (self.left_hand_activator, self.right_hand_activator, *_) = checkboxes
 
         # HANDS PROFILE CONFIGURATION
-        self.profile_label = RegularLabel(
-            self.form_panel, text="PERFIL DE LAS MANOS", size=21, variant="bold"
+        self.profile_label = ctk.CTkLabel(
+            self.form_panel,
+            text="PERFIL DE LAS MANOS",
+            font=AssetRegistry.fonts(21, "bold"),
         )
         self.profile_label.grid(row=2, column=0, pady=20, columnspan=2)
 
@@ -714,7 +714,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             state="readonly",
             values=values,
             command=lambda _: self.update_config(),
-            font=AssetRegistry.fonts()["regular"],
+            font=AssetRegistry.fonts(),
         )
         self.left_hand_profile_selector.set(values[0])
         self.left_hand_profile_selector.grid(row=3, column=0)
@@ -726,7 +726,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             state="readonly",
             values=values,
             command=lambda _: self.update_config(),
-            font=AssetRegistry.fonts()["regular"],
+            font=AssetRegistry.fonts(),
         )
         self.right_hand_profile_selector.set(values[0])
         self.right_hand_profile_selector.grid(row=3, column=1)
@@ -856,7 +856,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
                     self.checkbox_collection_panel,
                     text=name,
                     command=self.update_config,
-                    font=AssetRegistry.fonts()["regular"],
+                    font=AssetRegistry.fonts(),
                 )
                 checkbox.grid(row=idx, column=hand_number, pady=10)
 
@@ -928,7 +928,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             text_color="#4caf93",
             hover_color="#2a3632",
             fg_color="#0f2e1e",
-            font=AssetRegistry.fonts()["regular"],
+            font=AssetRegistry.fonts(),
             image=AssetRegistry.icons()["save"],
             command=self.save_new_config,
         )
@@ -982,7 +982,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             fg_color="#391010",
             text_color="#ff6b6b",
             hover_color="#4d1515",
-            font=AssetRegistry.fonts()["regular"],
+            font=AssetRegistry.fonts(),
             image=AssetRegistry.icons()["trash"],
             command=self._delete_current_gesture,
             state=ctk.NORMAL if not self._is_new else ctk.DISABLED,
@@ -1006,7 +1006,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self.form_buttons,
             height=31,
             text="Nuevo gesto",
-            font=AssetRegistry.fonts()["regular"],
+            font=AssetRegistry.fonts(),
             command=self._new_gesture,
             image=AssetRegistry.icons()["add"],
             state=ctk.NORMAL if not self._is_new else ctk.DISABLED,
@@ -1073,22 +1073,3 @@ class CustomButton(ImagesEffectLabel):
     def on_enter(self, _):
         self.activate_image("mouseEnter")
         self.configure(fg_color="transparent")
-
-
-class RegularLabel(ctk.CTkLabel):
-    def __init__(
-        self,
-        master,
-        text,
-        text_color="#DCE4EE",
-        size: int | None = None,
-        variant: Literal["regular", "bold"] = "regular",
-    ):
-        super().__init__(
-            master,
-            text=text,
-            fg_color="transparent",
-            text_color=text_color,
-            font=AssetRegistry.fonts(size)[variant],
-            compound="center",
-        )

@@ -36,7 +36,7 @@ class Notifier(ctk.CTkFrame):
         self.message = ctk.CTkLabel(
             self,
             text="",
-            font=AssetRegistry.fonts()["regular"],
+            font=AssetRegistry.fonts(),
             width=100,
             height=30,
         )

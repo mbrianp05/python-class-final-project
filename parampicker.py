@@ -55,9 +55,8 @@ class BaseParamPanel(ctk.CTkFrame, abc.ABC):
             width=400,
             **kwargs,
         )
-        font_map = AssetRegistry.fonts()
-        self.font_regular = font_map["regular"]
-        self.font_bold = font_map["bold"]
+        self.font_regular = AssetRegistry.fonts(variant="regular")
+        self.font_bold = AssetRegistry.fonts(variant="bold")
         self._build()
 
     # -- API pública --------------------------------------------------------

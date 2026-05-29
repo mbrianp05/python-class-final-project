@@ -1,89 +1,42 @@
-"""
-loader.py – Carga de assets con patrón Singleton.
-
-Uso:
-    from loader import AssetRegistry
-
-    # Obtener fuentes e iconos (se instancian solo la primera vez)
-    fonts = AssetRegistry.fonts()
-    icons = AssetRegistry.icons()
-    icons_large = AssetRegistry.icons(scale=260)
-
-    # Cargar las fuentes al inicio de la app (llamar una sola vez en main.py)
-    AssetRegistry.load_fonts()
-"""
-
-from __future__ import annotations
-
-from typing import Dict
+from typing import Dict, Literal
 
 import customtkinter as ctk
 import tksvg
-
-# ---------------------------------------------------------------------------
-# Tipos de alias
-# ---------------------------------------------------------------------------
 
 FontMap = Dict[str, ctk.CTkFont]
 IconMap = Dict[str, tksvg.SvgImage]
 
 
-# ---------------------------------------------------------------------------
-# Singleton de assets
-# ---------------------------------------------------------------------------
-
-
 class AssetRegistry:
-    """
-    Registro centralizado de fuentes e iconos.
-
-    • Las fuentes se almacenan por tamaño: _fonts_cache[size] → FontMap
-    • Los iconos se almacenan por escala:  _icons_cache[scale] → IconMap
-    • Ningún objeto se crea más de una vez por parámetro.
-    """
-
-    _fonts_cache: Dict[int | None, FontMap] = {}
+    _fonts_cache: FontMap = {}
     _icons_cache: Dict[int, IconMap] = {}
 
-    # ------------------------------------------------------------------
-    # Inicialización (llamar una sola vez en main.py)
-    # ------------------------------------------------------------------
+    _SIZES = {
+        "title": 25,
+        "regular": 15,
+        "bold": 15,
+    }
 
     @classmethod
     def load_fonts(cls) -> None:
-        """Registra el archivo de fuente en CustomTkinter."""
         ctk.FontManager.load_font("fonts/InterVariable.ttf")
 
-    # ------------------------------------------------------------------
-    # Fuentes
-    # ------------------------------------------------------------------
-
     @classmethod
-    def fonts(cls, size: int | None = None) -> FontMap:
-        """
-        Devuelve el mapa de fuentes para *size*.
-        Si ya fue creado para ese tamaño, devuelve la instancia cacheada.
+    def fonts(
+        cls,
+        size: int | None = None,
+        variant: Literal["title", "bold", "regular"] = "regular",
+    ) -> ctk.CTkFont:
+        hash = str(size) + variant
 
-        Claves devueltas: "title", "bold", "regular"
-        """
-        if size not in cls._fonts_cache:
-            cls._fonts_cache[size] = {
-                "title": ctk.CTkFont(
-                    family="Inter Variable",
-                    size=25 if size is None else size,
-                ),
-                "bold": ctk.CTkFont(
-                    family="Inter Variable",
-                    size=15 if size is None else size,
-                    weight="bold",
-                ),
-                "regular": ctk.CTkFont(
-                    family="Inter Variable",
-                    size=15 if size is None else size,
-                    weight="normal",
-                ),
-            }
-        return cls._fonts_cache[size]
+        if hash not in cls._fonts_cache:
+            cls._fonts_cache[hash] = ctk.CTkFont(
+                family="Inter Variable",
+                size=size or cls._SIZES[variant],
+                weight="bold" if variant == "bold" or variant == "title" else "normal",
+            )
+
+        return cls._fonts_cache[hash]
 
     # ------------------------------------------------------------------
     # Iconos
@@ -113,10 +66,6 @@ class AssetRegistry:
 
     @classmethod
     def icons(cls, scale: int = 25) -> IconMap:
-        """
-        Devuelve el mapa de iconos para *scale*.
-        Si ya fue creado para esa escala, devuelve la instancia cacheada.
-        """
         if scale not in cls._icons_cache:
             cls._icons_cache[scale] = {
                 name: tksvg.SvgImage(file=path, scaletoheight=scale)
@@ -124,34 +73,16 @@ class AssetRegistry:
             }
         return cls._icons_cache[scale]
 
-    # ------------------------------------------------------------------
-    # Utilidad: invalidar caché (útil en tests o recargas en caliente)
-    # ------------------------------------------------------------------
-
-    @classmethod
-    def clear_cache(cls) -> None:
-        """Elimina todos los objetos cacheados. Úsalo con cuidado."""
-        cls._fonts_cache.clear()
-        cls._icons_cache.clear()
-
-
-# ---------------------------------------------------------------------------
-# API de compatibilidad hacia atrás
-# Permite que el código antiguo que llama a load_fonts_files() / get_fonts()
-# / get_icons() siga funcionando sin cambios mientras se migra gradualmente.
-# ---------------------------------------------------------------------------
-
 
 def load_fonts_files() -> None:
-    """Compatibilidad: delega en AssetRegistry.load_fonts()."""
     AssetRegistry.load_fonts()
 
 
-def get_fonts(size: int | None = None) -> FontMap:
-    """Compatibilidad: delega en AssetRegistry.fonts(size)."""
-    return AssetRegistry.fonts(size)
+def get_fonts(
+    size: int | None = None, variant: Literal["title", "bold", "regular"] = "regular"
+) -> ctk.CTkFont:
+    return AssetRegistry.fonts(size, variant)
 
 
 def get_icons(scale: int = 25) -> IconMap:
-    """Compatibilidad: delega en AssetRegistry.icons(scale)."""
     return AssetRegistry.icons(scale)

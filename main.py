@@ -4,7 +4,12 @@ import customtkinter as ctk
 
 from loader import AssetRegistry
 from uiclasses import View
-from utils import create_config_file_if_not_exists, supress_warnings, verify_os
+from utils import (
+    create_config_file_if_not_exists,
+    get_or_default,
+    supress_warnings,
+    verify_os,
+)
 from views import BaseView, ConfigureGesturesView, GestureDetectionView
 
 AssetRegistry.load_fonts()
@@ -18,53 +23,58 @@ class App(ctk.CTk):
         super().__init__()
 
         self.title("Reconocimiento de gestos")
-        self.views: Dict[View, BaseView] = {}
+
+        self._views_classes: Dict[View, type[BaseView]] = {}
+        self._views_instances: Dict[View, BaseView] = {}
 
         self.set_views()
         self.maximize_window()
 
     def set_views(self):
-        self.views[View.DETECTION_VIEW] = GestureDetectionView(self)
-        self.views[View.SETTINGS_VIEW] = ConfigureGesturesView(self)
+        self._views_classes[View.DETECTION_VIEW] = GestureDetectionView
+        self._views_classes[View.SETTINGS_VIEW] = ConfigureGesturesView
 
         # Esto es temporal
         self.bind(
             "<Key>",
             cast(
-                GestureDetectionView, self.views[View.DETECTION_VIEW]
+                GestureDetectionView, self._views_classes[View.DETECTION_VIEW]
             ).highlight_gesture,
         )
-
-        for view in self.views.values():
-            view.pack(fill="both", expand=True)
 
         self.show_main()
 
     def show_main(self):
         main: View | None = None
 
-        for name, view in self.views.items():
-            if view._MAIN is True:
+        for name, cls in self._views_classes.items():
+            if cls.is_main() is True:
                 main = name
 
         if main is None:
-            main = list(self.views.keys())[0]
+            main = get_or_default(list(self._views_classes.keys()), 0, None)
+
+        if main is None:
+            return
 
         self.show(main)
 
     def show(self, active_view):
-        for view in self.views.values():
+        for view in self._views_instances.values():
             view.pack_forget()
 
-        self.views[active_view].pack(fill="both", expand=True)
-        self.views[active_view].update()
+        if active_view not in self._views_instances:
+            self._views_instances[active_view] = self._views_classes[active_view](self)
+
+        self._views_instances[active_view].pack(fill="both", expand=True)
+        self._views_instances[active_view].update()
 
     def maximize_window(self):
         self._state_before_windows_set_titlebar_color = "zoomed"
 
     def on_closing(self):
-        for view in self.views.values():
-            getattr(view, "on_closing", lambda: None)()
+        for view in self._views_instances.values():
+            view.on_closing()
 
 
 if __name__ == "__main__":

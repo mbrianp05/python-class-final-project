@@ -8,7 +8,10 @@ from widgets import Camera, SettingsForm, SettingsHeader, Sidebar
 
 
 class BaseView(ctk.CTkFrame, abc.ABC):
-    _MAIN = False
+    @classmethod
+    @abc.abstractmethod
+    def is_main(cls) -> bool:
+        """Verifica que la vista sea la principal"""
 
     @abc.abstractmethod
     def on_closing(self):
@@ -23,12 +26,14 @@ class GestureDetectionView(BaseView):
     def __init__(self, master):
         super().__init__(master, fg_color=get_color_palette()["bg"])
 
-        self._MAIN = not GestureStore.get().is_empty()
-
         self.set_layout()
 
         self.display_sidebar()
         self.display_camera()
+
+    @classmethod
+    def is_main(cls) -> bool:
+        return not GestureStore.get().is_empty()
 
     def highlight_gesture(self, event):
         if event.char.isdigit():
@@ -58,11 +63,13 @@ class ConfigureGesturesView(BaseView):
     def __init__(self, master):
         super().__init__(master, fg_color=get_color_palette()["bg"])
 
-        self._MAIN = GestureStore.get().is_empty()
-
         self.set_layout()
         self.display_header()
         self.display_form()
+
+    @classmethod
+    def is_main(cls) -> bool:
+        return GestureStore.get().is_empty()
 
     def set_layout(self):
         self.columnconfigure(0, weight=1)
