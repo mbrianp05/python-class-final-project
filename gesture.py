@@ -8,8 +8,8 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-from utilityclasses import Action, Finger, HandProfile
 from actions import get_actions_function
+from utilityclasses import Action, Finger, HandProfile
 
 
 # En esta clase se guarda toda la data
