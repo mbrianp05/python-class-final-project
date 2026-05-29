@@ -10,32 +10,24 @@ from PIL import Image
 from actions import get_actions_parameter_type
 from gesture import Gesture, GestureData, GestureRecognition, HandProfile
 from loader import AssetRegistry
+from notifier import Notifier
 from parampicker import ParamPicker
 from services import add_gesture, fetch_gestures, remove_gesture, update_gesture
-from uiclasses import MessageType, MouseEventsImagesPack, View
+from uiclasses import MouseEventsImagesPack, View
 from utilityclasses import Action, Finger, FormState, ParamType
 from utils import (
     confirm,
     get_action_from_repr,
+    get_color_palette,
     get_hand_profile_from_repr,
     get_or_default,
     get_repr_for_action,
     get_repr_for_hand_profile,
-    messagebox_error,
-    messagebox_info,
     shorten_gesture_name,
 )
 
 
 class GestureItem(ctk.CTkFrame):
-    """
-    Fila de la lista de gestos del Sidebar.
-
-    Contiene el icono de la accion, el nombre del gesto y su descripcion.
-    El metodo highlight() hace parpadear el fondo dos veces entre
-    _HIGHLIGHT_COLOR y "transparent".
-    """
-
     _HIGHLIGHT_COLOR = "#262624"
     _PULSE_MS = 250  # duracion de cada semiciclo (encendido / apagado)
     _PULSES = 2  # numero de parpadeos completos
@@ -242,10 +234,10 @@ class Sidebar(CTkFrame):
 
 class Camera(ctk.CTkFrame):
     # Colores del badge de bloqueo
-    _BADGE_BLOCKED_BG = "#391010"
-    _BADGE_BLOCKED_TEXT = "#ff6b6b"
-    _BADGE_OK_BG = "#0f2e1e"
-    _BADGE_OK_TEXT = "#4caf93"
+    _BADGE_BLOCKED_BG = get_color_palette()["red_bg"]
+    _BADGE_BLOCKED_TEXT = get_color_palette()["red_text"]
+    _BADGE_OK_BG = get_color_palette()["green_bg"]
+    _BADGE_OK_TEXT = get_color_palette()["green_text"]
 
     def __init__(self, master, highlighter):
         super().__init__(master)
@@ -421,6 +413,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.display_delete_button()
         self.display_add_new_button()
 
+        self.notifier = Notifier(self)
+
         self._adjust_current_configuration_display()
 
     def _empty_gesture(self):
@@ -476,7 +470,16 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
     def change_action(self):
         self.update_config()
-        self._change_param_type_form(change_value=False)
+        selected_action = self.get_selected_action()
+        original_data = get_or_default(
+            self.gestures, self.index_of_local_gesture(), None
+        )
+        original_action = None
+
+        if original_data is not None:
+            original_action = original_data.effect
+
+        self._change_param_type_form(change_value=selected_action == original_action)
 
     def get_current_param_value(self) -> float | int | str | bool | None:
         return self.current_gesture.param
@@ -488,7 +491,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
     def _change_param_type_form(self, change_value=True):
         required_param_type = get_actions_parameter_type()[self.get_selected_action()]
-        value = self.get_current_param_value()
+        value = self.get_current_param_value() if change_value else None
 
         self.param_picker.set_param_type(required_param_type, value)
 
@@ -904,26 +907,22 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
             self.update_local_gesture()
 
-        self.feedback()
+        self._feedback_state_or_create_success()
 
-    # PENDIENTE DE IMPLEMENTACIÓN
-    def feedback(self):
+    def _feedback_state_or_create_success(self):
         outer_state = self.param_picker.get_state()
+        is_valid = self._inner_state.is_valid and outer_state.is_valid
 
-        state = self._inner_state.is_valid and outer_state.is_valid
-        type = MessageType.SUCCESS if state else MessageType.ERROR
+        if not is_valid:
+            self.notifier.error(
+                message=self._inner_state.error_message
+                or outer_state.error_message
+                or ""
+            )
 
-        msg = "Gesto guardado correctamente"
+            return
 
-        if not self._inner_state.is_valid:
-            msg = self._inner_state.error_message
-        elif not outer_state.is_valid:
-            msg = outer_state.error_message
-
-        if type == MessageType.SUCCESS:
-            messagebox_info("Éxito", "Gesto guardado exitosamente")
-        else:
-            messagebox_error("Error", msg or "")
+        self.notifier.success("✨ Gesto guardado exitosamente ✨")
 
     def display_save_settings_button(self):
         self.save_button = ctk.CTkButton(
@@ -946,6 +945,12 @@ class SettingsForm(ctk.CTkScrollableFrame):
             for gesture in self.gestures
             if gesture.id != self.current_gesture.id
         ]
+
+    def _feedback_remove_gesture(self, is_valid: bool = True):
+        notify = self.notifier.success if is_valid else self.notifier.error
+        message = "Gesto eliminado 💫" if is_valid else "No se pudo eliminar el gesto"
+
+        notify(message)
 
     def _delete_current_gesture(self):
         if self.current_gesture.id == -1:
@@ -970,8 +975,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 self._new_gesture()
                 self.delete_button.configure(state=ctk.DISABLED)
                 self.add_new_button.configure(state=ctk.DISABLED)
-        else:
-            messagebox_error("Error", "No se pudo eliminar el gesto")
+
+        self._feedback_remove_gesture(result)
 
     def display_delete_button(self):
         self.delete_button = ctk.CTkButton(
