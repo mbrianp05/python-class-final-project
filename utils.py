@@ -54,14 +54,6 @@ def is_valid_file(filepath: str) -> bool:
     return os.path.exists(filepath) and not os.path.isdir(filepath)
 
 
-def messagebox_info(title: str, message: str):
-    messagebox.showinfo(title, message)
-
-
-def messagebox_error(title: str, message: str):
-    messagebox.showerror(title, message)
-
-
 def confirm(message: str) -> bool:
     return messagebox.askokcancel("Confirma tu decisión", message=message)
 
@@ -70,17 +62,11 @@ def confirm(message: str) -> bool:
 # CAMBIAR AL GUSTO
 def get_color_palette():
     return {
-        "primary": "#2563EB",
-        "primary_hover": "#3B82F6",
-        "primary_muted": "#1E3A8A",
-        # Text
-        "text_primary": "#F1F5F9",
-        "text_secondary": "#94A3B8",
-        "text_accent": "#FFFFFF",
-        # Border & accent
-        "border": "#334155",
-        "accent": "#0EA5E9",
         "bg": "transparent",
+        "green_bg": "#0f2e1e",
+        "green_text": "#4caf93",
+        "red_bg": "#391010",
+        "red_text": "#ff6b6b",
     }
 
 
