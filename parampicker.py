@@ -88,7 +88,6 @@ class BinaryParamPanel(BaseParamPanel):
     stands_for = ParamType.BINARY
 
     def _build(self) -> None:
-        self.columnconfigure((0, 1), weight=1)
         self._var = ctk.IntVar(value=1)
 
         radio_cfg = dict(
@@ -201,7 +200,6 @@ class FileParamPanel(BaseParamPanel):
         )
         self._browse_btn.grid(row=0, column=1, padx=(0, 10))
 
-        # Fila 1: mensaje de error
         self._error_label = ctk.CTkLabel(
             self,
             text="",
@@ -342,23 +340,6 @@ class FolderParamPanel(BaseParamPanel):
 
 
 class ParamPicker(ctk.CTkFrame):
-    """
-    Contenedor principal que muestra el sub-picker adecuado según
-    el ParamType activo.
-
-    Uso:
-        picker = ParamPicker(master, paramtype=ParamType.NUMERIC, initial_value=0.5)
-        picker.get_value()   # → 0.5
-        picker.get_state()   # → FormState(is_valid=True)
-
-        # Cambiar de tipo en caliente:
-        picker.set_param_type(ParamType.FILE_PATH)
-
-    Para registrar un nuevo tipo de parámetro:
-        1. Crea una subclase de BaseParamPanel con `stands_for = ParamType.NUEVO`.
-        2. Añádela en _register_panels().
-    """
-
     def __init__(
         self,
         master: Any,
@@ -397,16 +378,16 @@ class ParamPicker(ctk.CTkFrame):
     def set_param_type(
         self, paramtype: ParamType | None, initial_value: Any = None
     ) -> None:
-        """Activa el sub-picker correspondiente a *paramtype*."""
         self._active_type = paramtype
 
-        for ptype, panel in self._panels.items():
+        for _, panel in self._panels.items():
             panel.pack_forget()
 
         if paramtype is None:
             return
 
         active_panel = self._panels.get(paramtype)
+
         if active_panel is None:
             raise KeyError(f"No hay panel registrado para ParamType.{paramtype}")
 
