@@ -4,6 +4,7 @@ from typing import Any, Callable, List, Literal, cast
 
 import customtkinter as ctk
 import cv2
+import tksvg
 from customtkinter import CTkFrame
 from PIL import Image
 
@@ -601,38 +602,35 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self._change_param_type_form()
 
     def display_current_gesture_selector(self):
-        self.gesture_selector = ctk.CTkComboBox(
+        self.gesture_selector = GestureBadgeSelector(
             self.gesture_info_panel,
-            height=31,
-            width=10,
-            command=lambda _: self.set_current_gesture(),
-            state="readonly",
-            font=AssetRegistry.fonts(),
+            gestures=self.gestures,
+            on_select=lambda name: self._on_badge_selected(name),
+            selected_name=self.current_gesture.name if self.current_gesture else "",
         )
+        self.gesture_selector.grid(row=0, column=0, sticky="we", pady=(0, 8))
 
-        self._set_current_gesture_selector()
-
-        self.gesture_selector.grid(
-            row=0,
-            column=0,
-            padx=(0, 0),
-            sticky="we",
-        )
+    def _on_badge_selected(self, name: str) -> None:
+        """Callback del GestureBadgeSelector."""
+        matches = [g for g in self.gestures if g.name == name]
+        if not matches:
+            return
+        self.add_new_button.configure(state=ctk.NORMAL)
+        self.delete_button.configure(state=ctk.NORMAL)
+        self.current_gesture = copy.deepcopy(matches[0])
+        self._adjust_current_configuration_display()
+        self._change_param_type_form()
 
     def _set_current_gesture_selector(self):
-        values = [g.name for g in self.gestures]
         is_new = self.current_gesture.id == -1
-
         if is_new:
-            values.append("")
-
-        self.gesture_selector.configure(values=values)
-
-        if is_new:
-            self.gesture_selector.set("")
-            return
-
-        self.gesture_selector.set(self.current_gesture.name)
+            self.gesture_selector.add_new_placeholder()
+        else:
+            self.gesture_selector.remove_placeholder()
+            self.gesture_selector.refresh(
+                self.gestures,
+                selected_name=self.current_gesture.name,
+            )
 
     def get_selected_action(self) -> Action:
         selected_action = self.action_selector.get()
@@ -720,72 +718,70 @@ class SettingsForm(ctk.CTkScrollableFrame):
         return [get_repr_for_action(p) for p in actions]
 
     def display_active_hands_selector(self):
-        left_images_pack = MouseEventsImagesPack(
-            noEvent=AssetRegistry.icons("hand-1", self._HAND_ICON_SCALE),
-            mouseEnter=AssetRegistry.icons("hand-1-darker", self._HAND_ICON_SCALE),
+        # ── Cajas de mano ────────────────────────────────────────────────
+        self.left_hand_activator = HandToggleBox(
+            self.form_panel,
+            icon=AssetRegistry.icons("hand-1", self._HAND_ICON_SCALE),
+            icon_active=AssetRegistry.icons("hand-1-darker", self._HAND_ICON_SCALE),
+            label="Mano izquierda",
+            is_active=False,
+            on_toggle=lambda _: self.update_config(),
         )
-        right_images_pack = MouseEventsImagesPack(
-            noEvent=AssetRegistry.icons("hand-2", self._HAND_ICON_SCALE),
-            mouseEnter=AssetRegistry.icons("hand-2-darker", self._HAND_ICON_SCALE),
+        self.left_hand_activator.grid(
+            row=0, column=0, padx=(0, 8), pady=(0, 16), sticky="we"
         )
 
-        self.left_hand_icon = ImagesEffectLabel(
-            self.form_panel, text="", images_pack=left_images_pack
+        self.right_hand_activator = HandToggleBox(
+            self.form_panel,
+            icon=AssetRegistry.icons("hand-2", self._HAND_ICON_SCALE),
+            icon_active=AssetRegistry.icons("hand-2-darker", self._HAND_ICON_SCALE),
+            label="Mano derecha",
+            is_active=False,
+            on_toggle=lambda _: self.update_config(),
         )
-        self.left_hand_icon.grid(row=0, column=0, sticky="w")
-
-        self.right_hand_icon = ImagesEffectLabel(
-            self.form_panel, text="", images_pack=right_images_pack
+        self.right_hand_activator.grid(
+            row=0, column=1, padx=(8, 0), pady=(0, 16), sticky="we"
         )
-        self.right_hand_icon.grid(row=0, column=1, sticky="e")
 
-        checkboxes = []
+        # Mantener referencia de icono para compatibilidad con _adjust_current_configuration_display
+        self.left_hand_icon = self.left_hand_activator
+        self.right_hand_icon = self.right_hand_activator
 
-        for i in range(2):
-            ch = ctk.CTkCheckBox(
-                self.form_panel,
-                text="",
-                command=self.update_config,
-                font=AssetRegistry.fonts(),
-            )
-            ch.grid(row=1, column=i, pady=10)
-            checkboxes.append(ch)
-
-        (self.left_hand_activator, self.right_hand_activator, *_) = checkboxes
-
-        # HANDS PROFILE CONFIGURATION
+        # ── Perfil de manos ──────────────────────────────────────────────
         self.profile_label = ctk.CTkLabel(
             self.form_panel,
             text="PERFIL DE LAS MANOS",
-            font=AssetRegistry.fonts(21, "bold"),
+            font=AssetRegistry.fonts(13, "bold"),
+            text_color="#6b7280",
+            anchor="w",
         )
-        self.profile_label.grid(row=2, column=0, pady=20, columnspan=2)
+        self.profile_label.grid(row=1, column=0, columnspan=2, sticky="we", pady=(0, 8))
 
         values = self.get_hand_profile_values()
 
         self.left_hand_profile_selector = ctk.CTkComboBox(
             self.form_panel,
-            width=250,
-            height=31,
+            width=10,
+            height=34,
             state="readonly",
             values=values,
             command=lambda _: self.update_config(),
             font=AssetRegistry.fonts(),
         )
         self.left_hand_profile_selector.set(values[0])
-        self.left_hand_profile_selector.grid(row=3, column=0)
+        self.left_hand_profile_selector.grid(row=2, column=0, padx=(0, 8), sticky="we")
 
         self.right_hand_profile_selector = ctk.CTkComboBox(
             self.form_panel,
-            width=250,
-            height=31,
+            width=10,
+            height=34,
             state="readonly",
             values=values,
             command=lambda _: self.update_config(),
             font=AssetRegistry.fonts(),
         )
         self.right_hand_profile_selector.set(values[0])
-        self.right_hand_profile_selector.grid(row=3, column=1)
+        self.right_hand_profile_selector.grid(row=2, column=1, padx=(8, 0), sticky="we")
 
     def get_fingers_selector_checkboxes(self) -> List[ctk.CTkCheckBox]:
         return [
@@ -823,7 +819,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 self.left_hand_profile_selector,
                 self.right_hand_profile_selector,
             ),
-            "hand_icon": (self.left_hand_icon, self.right_hand_icon),
             "setted_profile": (set_profile_left, set_profile_right),
         }
 
@@ -839,22 +834,17 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 ],
                 False: [self.get_hand_profile_values()[0]] * 2,
             },
-            "image": {
-                True: "noEvent",
-                False: "mouseEnter",
-            },
             "state": {True: "readonly", False: ctk.DISABLED},
         }
 
         for idx, is_active in enumerate([is_left_active, is_right_active]):
+            # select/deselect maneja tanto el checkbox como HandToggleBox
             getattr(
-                form_fields["hand_activator"][idx],
-                values["activator"][is_active],
+                form_fields["hand_activator"][idx], values["activator"][is_active]
             )()
             form_fields["hand_profile_selector"][idx].set(
                 values["profile"][is_active][idx]
             )
-            form_fields["hand_icon"][idx].activate_image(values["image"][is_active])
             form_fields["hand_profile_selector"][idx].configure(
                 state=values["state"][is_active]
             )
@@ -1078,6 +1068,265 @@ class SettingsForm(ctk.CTkScrollableFrame):
             state=ctk.NORMAL if not self._is_new else ctk.DISABLED,
         )
         self.add_new_button.grid(row=0, column=2, sticky="we", padx=8, pady=10)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HandToggleBox — caja de mano activa/inactiva
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class HandToggleBox(ctk.CTkFrame):
+    """
+    Reemplaza el par (ImagesEffectLabel + CTkCheckBox) del selector de manos.
+
+    Muestra el icono SVG de la mano dentro de una tarjeta.
+    • Activo  → fondo azul-púrpura oscuro  (#1e1a3a) + borde (#5b50d6)
+    • Inactivo → fondo neutro oscuro        (#1e1e1c) + borde (#2d2d2b)
+
+    Al hacer clic alterna el estado e invoca `on_toggle(is_active: bool)`.
+    """
+
+    _ACTIVE_BG = "#1e1a3a"
+    _ACTIVE_BORDER = "#5b50d6"
+    _ACTIVE_LABEL = "#9b93ff"
+
+    _INACTIVE_BG = "#1e1e1c"
+    _INACTIVE_BORDER = "#2d2d2b"
+    _INACTIVE_LABEL = "#555550"
+
+    def __init__(
+        self,
+        master,
+        icon: tksvg.SvgImage,
+        icon_active: tksvg.SvgImage,
+        label: str,
+        is_active: bool = False,
+        on_toggle: "Callable[[bool], None] | None" = None,
+    ):
+        super().__init__(
+            master,
+            corner_radius=14,
+            border_width=2,
+            cursor="hand2",
+        )
+        self._is_active = is_active
+        self._on_toggle = on_toggle
+        self._icon = icon
+        self._icon_active = icon_active
+
+        self.columnconfigure(0, weight=1)
+
+        self._icon_label = ctk.CTkLabel(
+            self,
+            text="",
+            image=icon,  # type: ignore
+            fg_color="transparent",
+        )
+        self._icon_label.grid(row=0, column=0, padx=20, pady=(16, 6))
+
+        self._text_label = ctk.CTkLabel(
+            self,
+            text=label,
+            font=AssetRegistry.fonts(17, variant="regular"),
+            fg_color="transparent",
+        )
+        self._text_label.grid(row=1, column=0, padx=20, pady=(0, 14))
+
+        # Capturar clic en el frame y en sus hijos
+        for widget in (self, self._icon_label, self._text_label):
+            widget.bind("<ButtonRelease-1>", self._handle_click)
+
+        self._apply_style()
+
+    # ── API pública ───────────────────────────────────────────────────────
+
+    def get(self) -> bool:
+        return self._is_active
+
+    def set(self, value: bool) -> None:
+        if self._is_active != value:
+            self._is_active = value
+            self._apply_style()
+
+    def select(self) -> None:
+        self.set(True)
+
+    def deselect(self) -> None:
+        self.set(False)
+
+    # ── Internos ─────────────────────────────────────────────────────────
+
+    def _handle_click(self, _) -> None:
+        self._is_active = not self._is_active
+        self._apply_style()
+        if self._on_toggle:
+            self._on_toggle(self._is_active)
+
+    def _apply_style(self) -> None:
+        if self._is_active:
+            self.configure(
+                fg_color=self._ACTIVE_BG,
+                border_color=self._ACTIVE_BORDER,
+            )
+            self._text_label.configure(text_color=self._ACTIVE_LABEL)
+            self._icon_label.configure(image=self._icon_active)
+        else:
+            self.configure(
+                fg_color=self._INACTIVE_BG,
+                border_color=self._INACTIVE_BORDER,
+            )
+            self._text_label.configure(text_color=self._INACTIVE_LABEL)
+            self._icon_label.configure(image=self._icon)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GestureBadgeSelector — fila de badges de gestos con scroll horizontal
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class GestureBadgeSelector(ctk.CTkScrollableFrame):
+    """
+    Reemplaza el CTkComboBox del selector de gestos.
+
+    Muestra cada gesto como un badge pill en una fila con scroll horizontal.
+    El badge seleccionado se resalta con fondo azul-púrpura.
+    Llama a `on_select(gesture_name: str)` cuando el usuario hace clic.
+
+    Uso:
+        selector = GestureBadgeSelector(master, gestures, on_select=callback)
+        selector.set_selected("Mi gesto")
+        selector.refresh(new_gestures_list)
+    """
+
+    _BADGE_NORMAL_BG = "#252523"
+    _BADGE_NORMAL_BORDER = "#3a3a38"
+    _BADGE_NORMAL_TEXT = "#b0ada8"
+
+    _BADGE_ACTIVE_BG = "#1e1a3a"
+    _BADGE_ACTIVE_BORDER = "#5b50d6"
+    _BADGE_ACTIVE_TEXT = "#c4bfff"
+
+    _BADGE_NEW_BG = "#1a2a1a"
+    _BADGE_NEW_BORDER = "#2d4a2d"
+    _BADGE_NEW_TEXT = "#6aaa6a"
+
+    def __init__(
+        self,
+        master,
+        gestures: "List[Gesture]",
+        on_select: "Callable[[str], None] | None" = None,
+        selected_name: str = "",
+        **kwargs,
+    ):
+        super().__init__(
+            master,
+            orientation="horizontal",
+            fg_color="transparent",
+            height=52,
+            **kwargs,
+        )
+        self._on_select = on_select
+        self._selected = selected_name
+        self._badges: "dict[str, ctk.CTkFrame]" = {}
+
+        self.refresh(gestures, selected_name)
+
+    # ── API pública ───────────────────────────────────────────────────────
+
+    def set_selected(self, name: str) -> None:
+        """Marca el badge con `name` como activo, desactiva el resto."""
+        old = self._selected
+        self._selected = name
+        if old in self._badges:
+            self._style_badge(self._badges[old], old, active=False)
+        if name in self._badges:
+            self._style_badge(self._badges[name], name, active=True)
+
+    def get(self) -> str:
+        return self._selected
+
+    def refresh(self, gestures: "List[Gesture]", selected_name: str = "") -> None:
+        """Destruye todos los badges y los recrea con la nueva lista."""
+        for w in list(self._badges.values()):
+            w.destroy()
+        self._badges.clear()
+        self._selected = selected_name
+
+        for gesture in gestures:
+            self._add_badge(gesture.name, is_new=False)
+
+        if selected_name:
+            self.set_selected(selected_name)
+
+    def add_new_placeholder(self) -> None:
+        """Añade un badge especial 'Nuevo gesto' sin seleccionar."""
+        name = "Nuevo gesto"
+        if name not in self._badges:
+            self._add_badge(name, is_new=True)
+        self.set_selected(name)
+
+    def remove_placeholder(self) -> None:
+        name = "Nuevo gesto"
+        if name in self._badges:
+            self._badges[name].destroy()
+            del self._badges[name]
+
+    # ── Internos ─────────────────────────────────────────────────────────
+
+    def _add_badge(self, name: str, is_new: bool = False) -> None:
+        badge = ctk.CTkFrame(
+            self,
+            corner_radius=20,
+            border_width=1,
+            cursor="hand2",
+        )
+        label = ctk.CTkLabel(
+            badge,
+            text=name,
+            font=AssetRegistry.fonts(16, "regular"),
+            fg_color="transparent",
+        )
+        label.grid(row=0, column=0, padx=14, pady=6)
+
+        self._style_badge(badge, name, active=(name == self._selected), is_new=is_new)
+
+        for widget in (badge, label):
+            widget.bind("<ButtonRelease-1>", lambda _, n=name: self._handle_click(n))
+
+        badge.pack(side="left", padx=(0, 6), pady=4)
+        self._badges[name] = badge
+
+    def _style_badge(
+        self,
+        badge: ctk.CTkFrame,
+        name: str,
+        active: bool,
+        is_new: bool = False,
+    ) -> None:
+        label = badge.winfo_children()[0] if badge.winfo_children() else None
+        if is_new:
+            badge.configure(
+                fg_color=self._BADGE_NEW_BG, border_color=self._BADGE_NEW_BORDER
+            )
+            if label:
+                label.configure(text_color=self._BADGE_NEW_TEXT)
+        elif active:
+            badge.configure(
+                fg_color=self._BADGE_ACTIVE_BG, border_color=self._BADGE_ACTIVE_BORDER
+            )
+            if label:
+                label.configure(text_color=self._BADGE_ACTIVE_TEXT)
+        else:
+            badge.configure(
+                fg_color=self._BADGE_NORMAL_BG, border_color=self._BADGE_NORMAL_BORDER
+            )
+            if label:
+                label.configure(text_color=self._BADGE_NORMAL_TEXT)
+
+    def _handle_click(self, name: str) -> None:
+        self.set_selected(name)
+        if self._on_select:
+            self._on_select(name)
 
 
 class ImagesEffectLabel(ctk.CTkLabel):
