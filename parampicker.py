@@ -216,6 +216,9 @@ class FileParamPanel(BaseParamPanel):
             height=_BUTTON_HEIGHT,
             corner_radius=_RADIUS,
             command=self._on_browse,
+            text_color="#d4cfff",
+            hover_color="#3d3480",
+            fg_color="#2d2060",
         )
         self._browse_btn.grid(row=0, column=1, padx=(0, 10))
 
@@ -306,6 +309,9 @@ class FolderParamPanel(BaseParamPanel):
             height=_BUTTON_HEIGHT,
             corner_radius=_RADIUS,
             command=self._on_browse,
+            text_color="#d4cfff",
+            hover_color="#3d3480",
+            fg_color="#2d2060",
         )
         self._browse_btn.grid(row=0, column=1, padx=(0, 10))
 

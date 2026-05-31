@@ -54,7 +54,7 @@ class AssetRegistry:
         "hand-2": "./icons/hand-2.svg",
         "hand-1-darker": "./icons/hand-1-darker.svg",
         "hand-2-darker": "./icons/hand-2-darker.svg",
-        "screenshot": "./icons/screenshot.svg",
+        "camera": "./icons/camera.svg",
         "open_file": "./icons/open-file.svg",
         "open_folder": "./icons/open-folder.svg",
         "run_program": "./icons/run-program.svg",
@@ -64,6 +64,7 @@ class AssetRegistry:
         "save": "./icons/save.svg",
         "trash": "./icons/trash.svg",
         "mark": "./icons/mark.svg",
+        "reset": "./icons/reset.svg",
     }
 
     @classmethod

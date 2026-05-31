@@ -58,7 +58,7 @@ class GestureItem(ctk.CTkFrame):
 
     def _get_icon(self, action: Action):
         action_icon_dict = {
-            Action.TAKE_SCREENSHOT: AssetRegistry.icons(name="screenshot"),
+            Action.TAKE_SCREENSHOT: AssetRegistry.icons(name="camera"),
             Action.OPEN_FILE: AssetRegistry.icons(name="open_file"),
             Action.OPEN_FOLDER: AssetRegistry.icons(name="open_folder"),
             Action.RUN_PROGRAM: AssetRegistry.icons(name="run_program"),
@@ -440,7 +440,10 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self._left_col, fg_color="transparent", width=440
         )
         self._gesture_info_panel.grid_propagate(False)
-        self._gesture_info_panel.rowconfigure((0, 1, 2, 3), pad=50)
+
+        self._gesture_info_panel.rowconfigure((3, 4), pad=50)
+        self._gesture_info_panel.rowconfigure((0, 1, 2), pad=10)
+
         self._gesture_info_panel.columnconfigure(0, weight=1)
         self._gesture_info_panel.grid(row=0, column=0, sticky="nswe")
 
@@ -450,9 +453,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         # form_buttons en _left_col row=1 → siempre al fondo de la columna izquierda
         self._form_buttons = ctk.CTkFrame(
-            self._left_col, border_color="#262624", border_width=2
+            self._left_col, fg_color="transparent", border_width=0
         )
-        self._form_buttons.columnconfigure((0, 1), weight=1)
+        self._form_buttons.columnconfigure(0, weight=1)
         self._form_buttons.grid(row=1, column=0, sticky="we", pady=(10, 0))
 
         self._display_current_gesture_selector()
@@ -461,7 +464,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self._display_visible_fingers_selector()
         self._display_action_selector()
         self._display_save_settings_button()
-        self._display_delete_button()
 
         self._notifier = Notifier(self)
         self._adjust_current_configuration_display()
@@ -507,7 +509,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             font=AssetRegistry.fonts(),
             command=lambda _: self._change_action(),
         )
-        self.action_selector.grid(row=2, column=0, sticky="we")
+        self.action_selector.grid(row=3, column=0, sticky="we")
 
         self._adjust_current_gesture_effect()
         paramtype = self._get_paramtype_for_current_action()
@@ -518,7 +520,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             initial_value=self._get_current_param_value(),
             on_change=lambda _: self._determine_save_button_state(),
         )
-        self.param_picker.grid(row=3, column=0, sticky="we")
+        self.param_picker.grid(row=4, column=0, sticky="we")
 
     def _change_action(self):
         self._update_config()
@@ -568,8 +570,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             image=AssetRegistry.icons("mark", 33),  # type: ignore
         )
         self.name_label.grid(row=0, column=0, padx=10, pady=10)
-
-        self.name_field_box.grid(row=1, column=0, sticky="we")
+        self.name_field_box.grid(row=2, column=0, sticky="we")
 
     def _check_name_validity(self):
         if self._current_gesture.name == "":
@@ -585,13 +586,47 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self._determine_save_button_state()
 
     def _display_current_gesture_selector(self):
+        # row=0: fila de badges
         self.gesture_selector = GestureBadgeSelector(
             self._gesture_info_panel,
             gestures=self._gestures,
             on_select=lambda id: self._on_badge_selected(id),
-            selected_id=self._current_gesture.id if self._current_gesture else --1,
+            selected_id=self._current_gesture.id if self._current_gesture else -1,
         )
         self.gesture_selector.grid(row=0, column=0, sticky="we", pady=(0, 8))
+
+        _btn_row = ctk.CTkFrame(self._gesture_info_panel, fg_color="transparent")
+        _btn_row.grid(row=1, column=0, sticky="w", pady=(0, 16))
+
+        _size = 36
+
+        self.delete_button = ctk.CTkButton(
+            _btn_row,
+            width=_size,
+            height=_size,
+            text="",
+            fg_color="#391010",
+            hover_color="#4d1515",
+            corner_radius=_size // 2,
+            image=AssetRegistry.icons(name="trash"),
+            command=self._delete_current_gesture,
+            state=ctk.NORMAL if not self._is_new else ctk.DISABLED,
+        )
+        self.delete_button.grid(row=0, column=0)
+
+        self.reset_button = ctk.CTkButton(
+            _btn_row,
+            width=_size,
+            height=_size,
+            text="",
+            fg_color="#1e1e1c",
+            hover_color="#2d2d2b",
+            corner_radius=_size // 2,
+            image=AssetRegistry.icons(name="reset"),
+            command=self._reset_form,
+            state=ctk.DISABLED,
+        )
+        self.reset_button.grid(row=0, column=1, padx=(8, 0))
 
     def _on_badge_selected(self, id: int) -> None:
         if id == -1:
@@ -603,12 +638,15 @@ class SettingsForm(ctk.CTkScrollableFrame):
             return
 
         self.delete_button.configure(state=ctk.NORMAL)
+        self.reset_button.configure(state=ctk.NORMAL)
 
         self._current_gesture = copy.deepcopy(matches[0])
+        self._original_gesture = copy.deepcopy(matches[0])
         self._adjust_current_configuration_display()
         self._change_param_type_form()
 
         self.save_button.configure(state=ctk.DISABLED)
+        self.reset_button.configure(state=ctk.DISABLED)
 
     def _set_current_gesture_selector(self, is_new=False):
         if is_new:
@@ -616,7 +654,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 self._current_gesture.name, self._current_gesture.id
             )
             self.gesture_selector.after(
-                300, lambda: self.gesture_selector._parent_canvas.xview_moveto(1.0)
+                200, lambda: self.gesture_selector._parent_canvas.xview_moveto(1.0)
             )
         else:
             self.gesture_selector.refresh(
@@ -829,7 +867,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
         }
 
         for idx, is_active in enumerate([is_left_active, is_right_active]):
-            # select/deselect maneja tanto el checkbox como HandToggleBox
             getattr(
                 form_fields["hand_activator"][idx], values["activator"][is_active]
             )()
@@ -857,6 +894,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
             else:
                 if hand_fingers.count(getattr(ch, "stands_for")) == 1:
                     ch.select()
+                else:
+                    ch.deselect()
 
                 ch.configure(state=ctk.NORMAL)
 
@@ -918,6 +957,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         else:
             self._gestures[idx] = self._current_gesture
 
+        self._original_gesture = self._current_gesture
         self._set_current_gesture_selector(is_new=idx == -1)
 
     def _save_new_config(self):
@@ -938,6 +978,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
                 if gesture_width_id is not None:
                     self._current_gesture = gesture_width_id
+
+            self.reset_button.configure(state=ctk.DISABLED)
 
             Universe.rise().signal(
                 Sidebar, Modification(modification_type, self._current_gesture)
@@ -965,18 +1007,18 @@ class SettingsForm(ctk.CTkScrollableFrame):
     def _display_save_settings_button(self):
         self.save_button = ctk.CTkButton(
             self._form_buttons,
-            height=31,
-            width=120,
-            text="Guardar",
-            text_color="#4caf93",
-            hover_color="#2a3632",
-            fg_color="#0f2e1e",
-            font=AssetRegistry.fonts(),
+            height=40,
+            text="Guardar cambios",
+            text_color="#d4cfff",
+            hover_color="#3d3480",
+            fg_color="#2d2060",
+            corner_radius=10,
+            font=AssetRegistry.fonts(15, "bold"),
             image=AssetRegistry.icons(name="save"),
             command=self._save_new_config,
             state=ctk.DISABLED,
         )
-        self.save_button.grid(row=0, column=0, sticky="we", padx=8, pady=10)
+        self.save_button.grid(row=0, column=0, sticky="we", padx=0, pady=0)
 
     def _remove_local_gesture(self):
         self._gestures = [
@@ -1014,10 +1056,12 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 self._set_current_gesture_selector()
                 self._adjust_current_configuration_display()
                 self._change_param_type_form()
+
                 self.gesture_selector._parent_canvas.xview_moveto(0.0)
             else:
                 self._new_gesture()
-                self.delete_button.configure(state=ctk.DISABLED)
+
+            self.reset_button.configure(state=ctk.DISABLED)
 
         self._feedback_remove_gesture(result)
 
@@ -1031,27 +1075,21 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         state = ctk.NORMAL if has_changes else ctk.DISABLED
         self.save_button.configure(state=state)
+        self.reset_button.configure(state=state)
 
-    def _display_delete_button(self):
-        self.delete_button = ctk.CTkButton(
-            self._form_buttons,
-            height=31,
-            width=120,
-            text="Eliminar",
-            fg_color="#391010",
-            text_color="#ff6b6b",
-            hover_color="#4d1515",
-            font=AssetRegistry.fonts(),
-            image=AssetRegistry.icons(name="trash"),
-            command=self._delete_current_gesture,
-            state=ctk.NORMAL if not self._is_new else ctk.DISABLED,
-        )
-        self.delete_button.grid(row=0, column=1, sticky="we", padx=8, pady=10)
+    def _reset_form(self) -> None:
+        self._current_gesture = copy.deepcopy(self._original_gesture)
+        self._adjust_current_configuration_display()
+        self._change_param_type_form()
+
+        self.save_button.configure(state=ctk.DISABLED)
+        self.reset_button.configure(state=ctk.DISABLED)
 
     def _new_gesture(self) -> None:
         self._empty_gesture()
 
         self.delete_button.configure(state=ctk.DISABLED)
+        self.reset_button.configure(state=ctk.DISABLED)
 
         ptype = get_actions_parameter_type()[self._current_gesture.effect]
 
@@ -1315,7 +1353,7 @@ class CustomButton(ImagesEffectLabel):
         command: Callable[[], Any] | None = None,
     ):
         super().__init__(master, text=text, images_pack=images_pack)
-        self.configure(cursor="hand2", fg_color="#2c2b28", width=46)
+        self.configure(cursor="hand2", fg_color="#1e1e1c", width=46)
 
         self.command = command
         self.images_pack = images_pack
@@ -1332,8 +1370,8 @@ class CustomButton(ImagesEffectLabel):
 
     def on_leave(self, _):
         self.activate_image("noEvent")
-        self.configure(fg_color="#2c2b28")
+        self.configure(fg_color="#1e1e1c")
 
     def on_enter(self, _):
         self.activate_image("mouseEnter")
-        self.configure(fg_color="transparent")
+        self.configure(fg_color="#2d2d2b")
