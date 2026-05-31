@@ -125,7 +125,7 @@ class GestureItem(ctk.CTkFrame):
             text="",
             image=self._get_icon(action),  # type: ignore
             height=36,
-        )  # type: ignore
+        )
         self.icon_label.grid(row=0, column=0, padx=8, sticky="ns")
 
         self.icon_box.grid(row=0, column=0, padx=7, pady=4, rowspan=2)
@@ -636,8 +636,11 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self._adjust_current_configuration_display()
         self._change_param_type_form()
 
-        self.save_button.configure(state=ctk.DISABLED)
-        self.reset_button.configure(state=ctk.DISABLED)
+        if self.save_button._state != ctk.DISABLED:
+            self.save_button.configure(state=ctk.DISABLED)
+
+        if self.reset_button._state != ctk.DISABLED:
+            self.reset_button.configure(state=ctk.DISABLED)
 
     def _set_current_gesture_selector(self, is_new=False):
         if is_new:
@@ -970,7 +973,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 if gesture_width_id is not None:
                     self._current_gesture = gesture_width_id
 
-            self.reset_button.configure(state=ctk.DISABLED)
+            if self.reset_button._state != ctk.DISABLED:
+                self.reset_button.configure(state=ctk.DISABLED)
 
             Universe.rise().signal(
                 Sidebar, Modification(modification_type, self._current_gesture)
@@ -1052,7 +1056,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
             else:
                 self._new_gesture()
 
-            self.reset_button.configure(state=ctk.DISABLED)
+            if self.reset_button._state != ctk.DISABLED:
+                self.reset_button.configure(state=ctk.DISABLED)
 
         self._feedback_remove_gesture(result)
 
@@ -1083,8 +1088,11 @@ class SettingsForm(ctk.CTkScrollableFrame):
     def _new_gesture(self) -> None:
         self._empty_gesture()
 
-        self.delete_button.configure(state=ctk.DISABLED)
-        self.reset_button.configure(state=ctk.DISABLED)
+        if self.save_button._state != ctk.DISABLED:
+            self.save_button.configure(state=ctk.DISABLED)
+
+        if self.reset_button._state != ctk.DISABLED:
+            self.reset_button.configure(state=ctk.DISABLED)
 
         ptype = get_actions_parameter_type()[self._current_gesture.effect]
 
