@@ -196,14 +196,9 @@ class Sidebar(CTkFrame, BaseResponder):
         )
         self.header_label.grid(row=0, column=1, pady=(0, 1), sticky="wens", padx=15)
 
-        images_pack = MouseEventsImagesPack(
-            noEvent=AssetRegistry.icons("gear"),
-            mouseEnter=AssetRegistry.icons("gear_darker"),
-        )
-
-        self.configure_gestures_label = CustomButton(
+        self.configure_gestures_label = NavigationButton(
             self.header,
-            images_pack=images_pack,
+            image=AssetRegistry.icons("gear"),
             command=lambda: Universe.rise().navigate(View.SETTINGS_VIEW),
         )
         self.configure_gestures_label.grid(row=0, column=0, sticky="wsn")
@@ -403,13 +398,9 @@ class SettingsHeader(ctk.CTkFrame):
         self.title_label.grid(row=0, column=1, padx=15)
 
     def display_go_back_button(self):
-        pack = MouseEventsImagesPack(
-            noEvent=AssetRegistry.icons("arrow_left", 30),
-            mouseEnter=AssetRegistry.icons("arrow_left_darker", 30),
-        )
-        self.nav_button = CustomButton(
+        self.nav_button = NavigationButton(
             self,
-            images_pack=pack,
+            image=AssetRegistry.icons("arrow_left", 30),
             command=lambda: Universe.rise().navigate(View.DETECTION_VIEW),  # type: ignore
         )
         self.nav_button.grid(row=0, column=0, sticky="wsn")
@@ -1348,34 +1339,43 @@ class ImagesEffectLabel(ctk.CTkLabel):
         self.configure(image=getattr(self.images_pack, image, None))
 
 
-class CustomButton(ImagesEffectLabel):
+class NavigationButton(ctk.CTkFrame):
+    _NORMAL_COLOR = "#404040"
+    _HOVER_COLOR = "#2d2d2b"
+
     def __init__(
         self,
         master,
-        images_pack: MouseEventsImagesPack,
-        text="",
+        image: tksvg.SvgImage,
         command: Callable[[], Any] | None = None,
     ):
-        super().__init__(master, text=text, images_pack=images_pack)
-        self.configure(cursor="hand2", fg_color="#1e1e1c", width=46)
+        super().__init__(
+            master,
+            cursor="hand2",
+            fg_color=self._NORMAL_COLOR,
+            width=46,
+            height=46,
+            corner_radius=0,
+        )
+        self.grid_propagate(False)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+
+        self._image_label = ctk.CTkLabel(self, text="", image=image)  # type: ignore
+        self._image_label.grid(row=0, column=0, sticky="nswe")
 
         self.command = command
-        self.images_pack = images_pack
 
-        self.bind("<Enter>", self.on_enter)
-        self.bind("<Leave>", self.on_leave)
-        self.bind("<ButtonRelease-1>", self.on_click)
-
-        self.configure(image=self.images_pack.noEvent)
+        self._image_label.bind("<Enter>", self.on_enter)
+        self._image_label.bind("<Leave>", self.on_leave)
+        self._image_label.bind("<ButtonRelease-1>", self.on_click)
 
     def on_click(self, _):
         if self.command is not None:
             self.command()
 
     def on_leave(self, _):
-        self.activate_image("noEvent")
-        self.configure(fg_color="#1e1e1c")
+        self.configure(fg_color=self._NORMAL_COLOR)
 
     def on_enter(self, _):
-        self.activate_image("mouseEnter")
-        self.configure(fg_color="#2d2d2b")
+        self.configure(fg_color=self._HOVER_COLOR)
