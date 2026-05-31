@@ -292,8 +292,8 @@ class Sidebar(CTkFrame, BaseResponder):
 class Camera(ctk.CTkFrame):
     _BADGE_BLOCKED_BG = get_color_palette()["red_bg"]
     _BADGE_BLOCKED_TEXT = get_color_palette()["red_text"]
-    _BADGE_OK_BG = get_color_palette()["green_bg"]
-    _BADGE_OK_TEXT = get_color_palette()["green_text"]
+    _BADGE_OK_BG = "#28323f"
+    _BADGE_OK_TEXT = "#3A8CFF"
 
     def __init__(self, master, highlighter):
         super().__init__(master)
@@ -327,7 +327,7 @@ class Camera(ctk.CTkFrame):
         self._badge_icon = ctk.CTkLabel(
             self.detection_badge,
             text="",
-            image=AssetRegistry.icons(name="generic-gesture"),  # type: ignore
+            image=AssetRegistry.icons(name="camera"),  # type: ignore
             fg_color="transparent",
         )
         self._badge_icon.grid(row=0, column=0, padx=(10, 4), pady=4)
@@ -335,7 +335,7 @@ class Camera(ctk.CTkFrame):
         self._badge_label = ctk.CTkLabel(
             self.detection_badge,
             text="Detección activa",
-            font=AssetRegistry.fonts(variant="regular"),
+            font=AssetRegistry.fonts(size=14, variant="regular"),
             text_color=self._BADGE_OK_TEXT,
             fg_color="transparent",
         )
@@ -654,7 +654,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 self._current_gesture.name, self._current_gesture.id
             )
             self.gesture_selector.after(
-                200, lambda: self.gesture_selector._parent_canvas.xview_moveto(1.0)
+                300, lambda: self.gesture_selector._parent_canvas.xview_moveto(1.0)
             )
         else:
             self.gesture_selector.refresh(
@@ -1074,8 +1074,12 @@ class SettingsForm(ctk.CTkScrollableFrame):
         )
 
         state = ctk.NORMAL if has_changes else ctk.DISABLED
-        self.save_button.configure(state=state)
-        self.reset_button.configure(state=state)
+
+        if self.save_button._state != state:
+            self.save_button.configure(state=state)
+
+        if self.reset_button._state != state:
+            self.reset_button.configure(state=state)
 
     def _reset_form(self) -> None:
         self._current_gesture = copy.deepcopy(self._original_gesture)
