@@ -437,8 +437,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self._left_col.grid(row=0, column=0, sticky="nswe", padx=40, pady=(40, 40))
 
         self.gesture_info_panel = ctk.CTkFrame(
-            self._left_col, fg_color="transparent", width=340
+            self._left_col, fg_color="transparent", width=440
         )
+        self.gesture_info_panel.grid_propagate(False)
         self.gesture_info_panel.rowconfigure((0, 1, 2, 3), pad=50)
         self.gesture_info_panel.columnconfigure(0, weight=1)
         self.gesture_info_panel.grid(row=0, column=0, sticky="nswe")
@@ -451,7 +452,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.form_buttons = ctk.CTkFrame(
             self._left_col, border_color="#262624", border_width=2
         )
-        self.form_buttons.columnconfigure((0, 1, 2), weight=1)
+        self.form_buttons.columnconfigure((0, 1), weight=1)
         self.form_buttons.grid(row=1, column=0, sticky="we", pady=(10, 0))
 
         self.display_current_gesture_selector()
@@ -461,7 +462,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.display_action_selector()
         self.display_save_settings_button()
         self.display_delete_button()
-        self.display_add_new_button()
 
         self.notifier = Notifier(self)
         self._adjust_current_configuration_display()
@@ -593,7 +593,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
         if len(matches) == 0:
             return
 
-        self.add_new_button.configure(state=ctk.NORMAL)
         self.delete_button.configure(state=ctk.NORMAL)
 
         self.current_gesture = copy.deepcopy(matches[0])
@@ -605,31 +604,34 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.gesture_selector = GestureBadgeSelector(
             self.gesture_info_panel,
             gestures=self.gestures,
-            on_select=lambda name: self._on_badge_selected(name),
-            selected_name=self.current_gesture.name if self.current_gesture else "",
+            on_select=lambda id: self._on_badge_selected(id),
+            selected_id=self.current_gesture.id if self.current_gesture else --1,
         )
         self.gesture_selector.grid(row=0, column=0, sticky="we", pady=(0, 8))
 
-    def _on_badge_selected(self, name: str) -> None:
-        """Callback del GestureBadgeSelector."""
-        matches = [g for g in self.gestures if g.name == name]
+    def _on_badge_selected(self, id: int) -> None:
+        if id == -1:
+            self._new_gesture()
+
+        matches = [g for g in self.gestures if g.id == id]
+
         if not matches:
             return
-        self.add_new_button.configure(state=ctk.NORMAL)
+
         self.delete_button.configure(state=ctk.NORMAL)
+
         self.current_gesture = copy.deepcopy(matches[0])
         self._adjust_current_configuration_display()
         self._change_param_type_form()
 
-    def _set_current_gesture_selector(self):
-        is_new = self.current_gesture.id == -1
+    def _set_current_gesture_selector(self, is_new=False):
+        self.gesture_selector.refresh(
+            self.gestures, selected_id=self.current_gesture.id, move_right=is_new
+        )
+
         if is_new:
-            self.gesture_selector.add_new_placeholder()
-        else:
-            self.gesture_selector.remove_placeholder()
-            self.gesture_selector.refresh(
-                self.gestures,
-                selected_name=self.current_gesture.name,
+            self.gesture_selector.after(
+                200, lambda: self.gesture_selector._parent_canvas.xview_moveto(1.0)
             )
 
     def get_selected_action(self) -> Action:
@@ -918,7 +920,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         return idx
 
-    def update_local_gesture(self):
+    def _update_local_gesture(self):
         idx = self.index_of_local_gesture()
 
         if idx == -1:
@@ -926,7 +928,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         else:
             self.gestures[idx] = self.current_gesture
 
-        self._set_current_gesture_selector()
+        self._set_current_gesture_selector(is_new=idx == -1)
 
     def save_new_config(self):
         inner_state = self._inner_state
@@ -934,7 +936,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         if inner_state.is_valid and outer_state.is_valid:
             self.delete_button.configure(state=ctk.NORMAL)
-            self.add_new_button.configure(state=ctk.NORMAL)
 
             self.current_gesture.param = self.param_picker.get_value()
             modification_type = ModificationType.UPDATE
@@ -943,16 +944,16 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 update_gesture(self.current_gesture)
             else:
                 modification_type = ModificationType.CREATE
-                tmp = add_gesture(self.current_gesture)
+                gesture_width_id = add_gesture(self.current_gesture)
 
-                if tmp is not None:
-                    self.current_gesture = tmp
+                if gesture_width_id is not None:
+                    self.current_gesture = gesture_width_id
 
             Universe.rise().signal(
                 Sidebar, Modification(modification_type, self.current_gesture)
             )
 
-            self.update_local_gesture()
+            self._update_local_gesture()
 
         self._feedback_state_or_create_success()
 
@@ -1022,10 +1023,10 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 self._set_current_gesture_selector()
                 self._adjust_current_configuration_display()
                 self._change_param_type_form()
+                self.gesture_selector._parent_canvas.xview_moveto(0.0)
             else:
                 self._new_gesture()
                 self.delete_button.configure(state=ctk.DISABLED)
-                self.add_new_button.configure(state=ctk.DISABLED)
 
         self._feedback_remove_gesture(result)
 
@@ -1049,25 +1050,12 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self._empty_gesture()
 
         self.delete_button.configure(state=ctk.DISABLED)
-        self.add_new_button.configure(state=ctk.DISABLED)
 
         ptype = get_actions_parameter_type()[self.current_gesture.effect]
 
         self.param_picker.set_param_type(ptype, None)
         self._set_current_gesture_selector()
         self._adjust_current_configuration_display()
-
-    def display_add_new_button(self):
-        self.add_new_button = ctk.CTkButton(
-            self.form_buttons,
-            height=31,
-            text="Nuevo gesto",
-            font=AssetRegistry.fonts(),
-            command=self._new_gesture,
-            image=AssetRegistry.icons("add"),
-            state=ctk.NORMAL if not self._is_new else ctk.DISABLED,
-        )
-        self.add_new_button.grid(row=0, column=2, sticky="we", padx=8, pady=10)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1076,16 +1064,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
 
 class HandToggleBox(ctk.CTkFrame):
-    """
-    Reemplaza el par (ImagesEffectLabel + CTkCheckBox) del selector de manos.
-
-    Muestra el icono SVG de la mano dentro de una tarjeta.
-    • Activo  → fondo azul-púrpura oscuro  (#1e1a3a) + borde (#5b50d6)
-    • Inactivo → fondo neutro oscuro        (#1e1e1c) + borde (#2d2d2b)
-
-    Al hacer clic alterna el estado e invoca `on_toggle(is_active: bool)`.
-    """
-
     _ACTIVE_BG = "#1e1a3a"
     _ACTIVE_BORDER = "#5b50d6"
     _ACTIVE_LABEL = "#9b93ff"
@@ -1109,6 +1087,7 @@ class HandToggleBox(ctk.CTkFrame):
             border_width=2,
             cursor="hand2",
         )
+
         self._is_active = is_active
         self._on_toggle = on_toggle
         self._icon = icon
@@ -1179,25 +1158,7 @@ class HandToggleBox(ctk.CTkFrame):
             self._icon_label.configure(image=self._icon)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# GestureBadgeSelector — fila de badges de gestos con scroll horizontal
-# ─────────────────────────────────────────────────────────────────────────────
-
-
 class GestureBadgeSelector(ctk.CTkScrollableFrame):
-    """
-    Reemplaza el CTkComboBox del selector de gestos.
-
-    Muestra cada gesto como un badge pill en una fila con scroll horizontal.
-    El badge seleccionado se resalta con fondo azul-púrpura.
-    Llama a `on_select(gesture_name: str)` cuando el usuario hace clic.
-
-    Uso:
-        selector = GestureBadgeSelector(master, gestures, on_select=callback)
-        selector.set_selected("Mi gesto")
-        selector.refresh(new_gestures_list)
-    """
-
     _BADGE_NORMAL_BG = "#252523"
     _BADGE_NORMAL_BORDER = "#3a3a38"
     _BADGE_NORMAL_TEXT = "#b0ada8"
@@ -1206,16 +1167,12 @@ class GestureBadgeSelector(ctk.CTkScrollableFrame):
     _BADGE_ACTIVE_BORDER = "#5b50d6"
     _BADGE_ACTIVE_TEXT = "#c4bfff"
 
-    _BADGE_NEW_BG = "#1a2a1a"
-    _BADGE_NEW_BORDER = "#2d4a2d"
-    _BADGE_NEW_TEXT = "#6aaa6a"
-
     def __init__(
         self,
         master,
-        gestures: "List[Gesture]",
-        on_select: "Callable[[str], None] | None" = None,
-        selected_name: str = "",
+        selected_id: int,
+        gestures: List[Gesture],
+        on_select: Callable[[int], None] | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -1226,54 +1183,55 @@ class GestureBadgeSelector(ctk.CTkScrollableFrame):
             **kwargs,
         )
         self._on_select = on_select
-        self._selected = selected_name
-        self._badges: "dict[str, ctk.CTkFrame]" = {}
+        self._selected = selected_id
+        self._badges: dict[int, ctk.CTkFrame] = {}
 
-        self.refresh(gestures, selected_name)
+        self.refresh(gestures, selected_id)
 
     # ── API pública ───────────────────────────────────────────────────────
 
-    def set_selected(self, name: str) -> None:
-        """Marca el badge con `name` como activo, desactiva el resto."""
+    def set_selected(self, id: int) -> bool:
+        """Marca el badge con un id determinado devuelve si era diferente al ya marcado"""
         old = self._selected
-        self._selected = name
-        if old in self._badges:
-            self._style_badge(self._badges[old], old, active=False)
-        if name in self._badges:
-            self._style_badge(self._badges[name], name, active=True)
 
-    def get(self) -> str:
+        if old == id:
+            return False
+
+        self._selected = id
+
+        if old in self._badges:
+            self._style_badge(self._badges[old], active=False)
+        if id in self._badges:
+            self._style_badge(self._badges[id], active=True)
+
+        return True
+
+    def get(self) -> int:
         return self._selected
 
-    def refresh(self, gestures: "List[Gesture]", selected_name: str = "") -> None:
+    def refresh(
+        self, gestures: List[Gesture], selected_id: int, move_right=False
+    ) -> None:
         """Destruye todos los badges y los recrea con la nueva lista."""
         for w in list(self._badges.values()):
             w.destroy()
+
         self._badges.clear()
-        self._selected = selected_name
+
+        """Añadir badge para crear gesto"""
+        self._add_badge("Nuevo", -1)
 
         for gesture in gestures:
-            self._add_badge(gesture.name, is_new=False)
+            self._add_badge(gesture.name, gesture.id)
 
-        if selected_name:
-            self.set_selected(selected_name)
-
-    def add_new_placeholder(self) -> None:
-        """Añade un badge especial 'Nuevo gesto' sin seleccionar."""
-        name = "Nuevo gesto"
-        if name not in self._badges:
-            self._add_badge(name, is_new=True)
-        self.set_selected(name)
-
-    def remove_placeholder(self) -> None:
-        name = "Nuevo gesto"
-        if name in self._badges:
-            self._badges[name].destroy()
-            del self._badges[name]
+        if selected_id:
+            self.set_selected(selected_id)
 
     # ── Internos ─────────────────────────────────────────────────────────
 
-    def _add_badge(self, name: str, is_new: bool = False) -> None:
+    def _add_badge(self, name: str, id: int) -> None:
+        is_new = id == -1
+
         badge = ctk.CTkFrame(
             self,
             corner_radius=20,
@@ -1282,51 +1240,51 @@ class GestureBadgeSelector(ctk.CTkScrollableFrame):
         )
         label = ctk.CTkLabel(
             badge,
-            text=name,
+            text=name if not is_new else f" {name}",
             font=AssetRegistry.fonts(16, "regular"),
+            image=AssetRegistry.icons("add", 23) if is_new else None,  # type: ignore
+            compound="left",
             fg_color="transparent",
         )
         label.grid(row=0, column=0, padx=14, pady=6)
 
-        self._style_badge(badge, name, active=(name == self._selected), is_new=is_new)
+        self._style_badge(badge, active=(id == self._selected))
 
         for widget in (badge, label):
-            widget.bind("<ButtonRelease-1>", lambda _, n=name: self._handle_click(n))
+            widget.bind("<ButtonRelease-1>", lambda _, n=id: self._handle_click(n))
 
         badge.pack(side="left", padx=(0, 6), pady=4)
-        self._badges[name] = badge
+        self._badges[id] = badge
 
     def _style_badge(
         self,
         badge: ctk.CTkFrame,
-        name: str,
         active: bool,
-        is_new: bool = False,
     ) -> None:
         label = badge.winfo_children()[0] if badge.winfo_children() else None
-        if is_new:
-            badge.configure(
-                fg_color=self._BADGE_NEW_BG, border_color=self._BADGE_NEW_BORDER
-            )
-            if label:
-                label.configure(text_color=self._BADGE_NEW_TEXT)
-        elif active:
+
+        if active:
             badge.configure(
                 fg_color=self._BADGE_ACTIVE_BG, border_color=self._BADGE_ACTIVE_BORDER
             )
             if label:
-                label.configure(text_color=self._BADGE_ACTIVE_TEXT)
+                label.configure(
+                    text_color=self._BADGE_ACTIVE_TEXT,
+                )
         else:
             badge.configure(
                 fg_color=self._BADGE_NORMAL_BG, border_color=self._BADGE_NORMAL_BORDER
             )
             if label:
-                label.configure(text_color=self._BADGE_NORMAL_TEXT)
+                label.configure(
+                    text_color=self._BADGE_NORMAL_TEXT,
+                )
 
-    def _handle_click(self, name: str) -> None:
-        self.set_selected(name)
-        if self._on_select:
-            self._on_select(name)
+    def _handle_click(self, id: int) -> None:
+        changed = self.set_selected(id)
+
+        if self._on_select and changed:
+            self._on_select(id)
 
 
 class ImagesEffectLabel(ctk.CTkLabel):
@@ -1375,8 +1333,6 @@ class CustomButton(ImagesEffectLabel):
 
         self.configure(image=self.images_pack.noEvent)
 
-    # Hay que implementar el click cuando se presione el boton
-    # usando la propiedad command
     def on_click(self, _):
         if self.command is not None:
             self.command()
