@@ -3,19 +3,20 @@ from typing import Any
 import customtkinter as ctk
 
 from loader import AssetRegistry
+from universe import BaseNotifier
 from utils import get_color_palette
 
 
-class Notifier(ctk.CTkFrame):
+class Notifier(ctk.CTkFrame, BaseNotifier):
     _PROPS = {
         "error": {
             "fg_color": get_color_palette()["red_bg"],
-            "border_color": get_color_palette()["red_text"],
+            "border_color": get_color_palette()["red_bg"],
             "text_color": get_color_palette()["red_text"],
         },
         "success": {
             "fg_color": get_color_palette()["green_bg"],
-            "border_color": get_color_palette()["green_text"],
+            "border_color": get_color_palette()["green_bg"],
             "text_color": get_color_palette()["green_text"],
         },
     }
@@ -40,7 +41,7 @@ class Notifier(ctk.CTkFrame):
             width=100,
             height=30,
         )
-        self.message.grid(row=0, column=0, padx=10, pady=10)
+        self.message.grid(row=0, column=0, padx=20, pady=10)
 
     def _reveal(
         self, message: str, text_color: str, border_color: str, fg_color: str

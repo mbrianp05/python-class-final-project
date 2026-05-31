@@ -8,7 +8,7 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-from actions import get_actions_function
+from actions import effects_functions
 from utilityclasses import Action, Finger, HandProfile
 
 
@@ -220,9 +220,9 @@ class GestureRecognition:
             for i, g in enumerate(self.gestures):
                 if self.current_data == g.settings:
                     if g.param is None:
-                        get_actions_function()[g.effect]()
+                        effects_functions()[g.effect]()
                     else:
-                        get_actions_function()[g.effect](g.param)
+                        effects_functions()[g.effect](g.param)
                     highlight_gesture(i)
                     break
 

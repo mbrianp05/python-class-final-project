@@ -15,7 +15,7 @@ from notifier import Notifier
 from parampicker import ParamPicker
 from services import add_gesture, fetch_gestures, remove_gesture, update_gesture
 from uiclasses import MouseEventsImagesPack, View
-from universe import Responder, Universe
+from universe import BaseResponder, Universe
 from utilityclasses import (
     Action,
     Finger,
@@ -159,7 +159,7 @@ class GestureItem(ctk.CTkFrame):
         self.after(self._PULSE_MS, lambda: self._run_pulse(remaining - 1))
 
 
-class Sidebar(CTkFrame, Responder):
+class Sidebar(CTkFrame, BaseResponder):
     _BG_COLOR = "#30302e"
     _WIDTH = 260
 
@@ -290,7 +290,6 @@ class Sidebar(CTkFrame, Responder):
 
 
 class Camera(ctk.CTkFrame):
-    # Colores del badge de bloqueo
     _BADGE_BLOCKED_BG = get_color_palette()["red_bg"]
     _BADGE_BLOCKED_TEXT = get_color_palette()["red_text"]
     _BADGE_OK_BG = get_color_palette()["green_bg"]
@@ -625,13 +624,16 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self._change_param_type_form()
 
     def _set_current_gesture_selector(self, is_new=False):
-        self.gesture_selector.refresh(
-            self.gestures, selected_id=self.current_gesture.id, move_right=is_new
-        )
-
         if is_new:
+            self.gesture_selector.insert_new(
+                self.current_gesture.name, self.current_gesture.id
+            )
             self.gesture_selector.after(
-                200, lambda: self.gesture_selector._parent_canvas.xview_moveto(1.0)
+                300, lambda: self.gesture_selector._parent_canvas.xview_moveto(1.0)
+            )
+        else:
+            self.gesture_selector.refresh(
+                self.gestures, selected_id=self.current_gesture.id
             )
 
     def get_selected_action(self) -> Action:
@@ -1209,9 +1211,7 @@ class GestureBadgeSelector(ctk.CTkScrollableFrame):
     def get(self) -> int:
         return self._selected
 
-    def refresh(
-        self, gestures: List[Gesture], selected_id: int, move_right=False
-    ) -> None:
+    def refresh(self, gestures: List[Gesture], selected_id: int) -> None:
         """Destruye todos los badges y los recrea con la nueva lista."""
         for w in list(self._badges.values()):
             w.destroy()
@@ -1226,6 +1226,10 @@ class GestureBadgeSelector(ctk.CTkScrollableFrame):
 
         if selected_id:
             self.set_selected(selected_id)
+
+    def insert_new(self, name: str, id: int) -> None:
+        self._add_badge(name, id)
+        self.set_selected(id)
 
     # ── Internos ─────────────────────────────────────────────────────────
 
@@ -1307,12 +1311,6 @@ class ImagesEffectLabel(ctk.CTkLabel):
         self.configure(image=getattr(self.images_pack, image, None))
 
 
-# El botón normal de Customtkinter tiene un aspecto
-# que en ciertos casos no queremos como el boton de configurar gestos
-# que no tiene color de fondo sino un icono que cambia segun los eventos
-# del raton
-# Como esta configuracion se usara mas veces entonces hice un componente para
-# reutilizarlo
 class CustomButton(ImagesEffectLabel):
     def __init__(
         self,

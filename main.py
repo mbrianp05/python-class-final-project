@@ -4,7 +4,7 @@ import customtkinter as ctk
 
 from loader import AssetRegistry
 from uiclasses import View
-from universe import Navigator, Universe
+from universe import BaseNavigator, Universe
 from utils import (
     create_config_file_if_not_exists,
     get_or_default,
@@ -19,7 +19,7 @@ create_config_file_if_not_exists()
 supress_warnings()
 
 
-class App(ctk.CTk, Navigator):
+class App(ctk.CTk, BaseNavigator):
     def __init__(self):
         super().__init__()
 

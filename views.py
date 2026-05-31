@@ -2,6 +2,7 @@ import abc
 
 import customtkinter as ctk
 
+from notifier import Notifier
 from services import GestureStore
 from universe import Universe
 from utils import get_color_palette
@@ -27,6 +28,9 @@ class GestureDetectionView(BaseView):
 
         self.display_sidebar()
         self.display_camera()
+
+        self.notifier = Notifier(self)
+        Universe.rise().stack_notifier(0, self.notifier)
 
     @classmethod
     def is_main(cls) -> bool:

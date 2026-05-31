@@ -17,6 +17,7 @@ from pycaw.pycaw import AudioUtilities
 from winrt.windows.devices.radios import Radio, RadioKind, RadioState
 
 import utils
+from universe import Universe
 from utilityclasses import Action, ParamType
 
 
@@ -31,7 +32,7 @@ def get_actions_parameter_type() -> Dict[Action, ParamType | None]:
     }
 
 
-def get_actions_function() -> Dict[Action, Callable]:
+def effects_functions() -> Dict[Action, Callable]:
     return {
         Action.TAKE_SCREENSHOT: take_screenshot,
         Action.OPEN_FILE: open_file_with_default_app,
@@ -44,37 +45,62 @@ def get_actions_function() -> Dict[Action, Callable]:
 
 # abrir el explorador en esa carpeta
 def open_explorer_at(path: str) -> None:
+    if not utils.is_valid_path(path):
+        Universe.rise().notifier(0).error("La carpeta que se desea abrir no existe")
+        return
+
     subprocess.run(["explorer", path])
 
 
 # Ejecutar programas solamente (.exe)
 # no sirve para abrir archivos como tal
-def run_program(path: str) -> None:
-    subprocess.run([path])
+def run_program(path_and_name: str) -> None:
+    if not utils.is_valid_file(path_and_name):
+        Universe.rise().notifier(0).error("El programa que se desea ejecutar no existe")
+        return
+
+    subprocess.run([path_and_name])
 
 
 def open_file_with_default_app(filepath: str) -> None:
+    if not utils.is_valid_file(filepath):
+        Universe.rise().notifier(0).error("El archivo que se desea abrir no existe")
+        return
+
     subprocess.run(["start", "", filepath], shell=True, check=True)
 
 
 def set_volume(delta_level: float) -> None:
     device = AudioUtilities.GetSpeakers()
 
-    if device is not None:
-        volume = device.EndpointVolume
-        level = utils.clamp(0.0, volume.GetMasterVolumeLevelScalar() + delta_level, 1.0)
-        volume.SetMasterVolumeLevelScalar(level, None)
+    if device is None:
+        Universe.rise().notifier(0).error(
+            "No existe un dispositivo de audio disponible"
+        )
+        return
+
+    volume = device.EndpointVolume
+    level = utils.clamp(0.0, volume.GetMasterVolumeLevelScalar() + delta_level, 1.0)
+    volume.SetMasterVolumeLevelScalar(level, None)
 
 
 def set_wifi_state(enable: bool) -> None:
     state = RadioState.ON if enable else RadioState.OFF
 
-    # Actualizar estado del primer dispositivo Wi-Fi encontrado
     async def async_set_wifi() -> None:
+        has_device = False
+
         for i in await Radio.get_radios_async():
             if i.kind == RadioKind.WI_FI and i.state != state:
-                _ = await i.set_state_async(state)  # type: ignore
+                await i.set_state_async(state)
+                has_device = True
+
                 break
+
+        if not has_device:
+            Universe.rise().notifier(0).error(
+                "No se encnotró ningún adpatador WIFI disponible"
+            )
 
     asyncio.run(async_set_wifi())
 
