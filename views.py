@@ -64,6 +64,9 @@ class ConfigureGesturesView(BaseView):
     def __init__(self, master):
         super().__init__(master, fg_color=get_color_palette()["bg"])
 
+        self.notifier = Notifier(self)
+        Universe.rise().stack_notifier(1, self.notifier)
+
         self.set_layout()
         self.display_header()
         self.display_form()

@@ -421,13 +421,14 @@ class SettingsForm(ctk.CTkScrollableFrame):
     def __init__(self, master):
         super().__init__(master, orientation="vertical", fg_color="transparent")
 
-        self.gestures = fetch_gestures()
+        self._gestures = fetch_gestures()
 
         self._is_new = False
         self._inner_state = FormState(is_valid=True)
+
         self._default_gesture()
 
-        self.set_layout()
+        self._set_layout()
 
         self._left_col = ctk.CTkFrame(self, fg_color="transparent")
         self._left_col.rowconfigure(0, weight=1)
@@ -435,34 +436,34 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self._left_col.columnconfigure(0, weight=1)
         self._left_col.grid(row=0, column=0, sticky="nswe", padx=40, pady=(40, 40))
 
-        self.gesture_info_panel = ctk.CTkFrame(
+        self._gesture_info_panel = ctk.CTkFrame(
             self._left_col, fg_color="transparent", width=440
         )
-        self.gesture_info_panel.grid_propagate(False)
-        self.gesture_info_panel.rowconfigure((0, 1, 2, 3), pad=50)
-        self.gesture_info_panel.columnconfigure(0, weight=1)
-        self.gesture_info_panel.grid(row=0, column=0, sticky="nswe")
+        self._gesture_info_panel.grid_propagate(False)
+        self._gesture_info_panel.rowconfigure((0, 1, 2, 3), pad=50)
+        self._gesture_info_panel.columnconfigure(0, weight=1)
+        self._gesture_info_panel.grid(row=0, column=0, sticky="nswe")
 
-        self.form_panel = ctk.CTkFrame(self, fg_color="transparent", width=600)
-        self.form_panel.columnconfigure((0, 1), weight=1, pad=30)
-        self.form_panel.grid(row=0, column=1, padx=40, pady=(40, 0))
+        self._form_panel = ctk.CTkFrame(self, fg_color="transparent", width=600)
+        self._form_panel.columnconfigure((0, 1), weight=1, pad=30)
+        self._form_panel.grid(row=0, column=1, padx=40, pady=(40, 0))
 
         # form_buttons en _left_col row=1 → siempre al fondo de la columna izquierda
-        self.form_buttons = ctk.CTkFrame(
+        self._form_buttons = ctk.CTkFrame(
             self._left_col, border_color="#262624", border_width=2
         )
-        self.form_buttons.columnconfigure((0, 1), weight=1)
-        self.form_buttons.grid(row=1, column=0, sticky="we", pady=(10, 0))
+        self._form_buttons.columnconfigure((0, 1), weight=1)
+        self._form_buttons.grid(row=1, column=0, sticky="we", pady=(10, 0))
 
-        self.display_current_gesture_selector()
-        self.display_name_field()
-        self.display_active_hands_selector()
-        self.display_visible_fingers_selector()
-        self.display_action_selector()
-        self.display_save_settings_button()
-        self.display_delete_button()
+        self._display_current_gesture_selector()
+        self._display_name_field()
+        self._display_active_hands_selector()
+        self._display_visible_fingers_selector()
+        self._display_action_selector()
+        self._display_save_settings_button()
+        self._display_delete_button()
 
-        self.notifier = Notifier(self)
+        self._notifier = Notifier(self)
         self._adjust_current_configuration_display()
 
     def _empty_gesture(self):
@@ -472,82 +473,82 @@ class SettingsForm(ctk.CTkScrollableFrame):
             visibleFingers=([], []),
             profile=(None, None),
         )
-        self.current_gesture = Gesture(
+        self._current_gesture = Gesture(
             id=-1,
             name="Nuevo gesto",
             settings=default_settings,
             effect=default_action,
             param=None,
         )
+        self._original_gesture = copy.deepcopy(self._current_gesture)
 
     def _default_gesture(self):
-        if len(self.gestures) == 0:
+        if len(self._gestures) == 0:
             self._empty_gesture()
             self._is_new = True
 
             return
 
-        self.current_gesture = copy.deepcopy(self.gestures[0])
+        self._current_gesture = copy.deepcopy(self._gestures[0])
+        self._original_gesture = self._gestures[0]
 
-    def set_layout(self):
+    def _set_layout(self):
         self.columnconfigure((1), weight=1)
 
-    def display_action_selector(self):
-        values = self.get_action_values()
+    def _display_action_selector(self):
+        values = self._get_action_values()
 
         self.action_selector = ctk.CTkComboBox(
-            self.gesture_info_panel,
+            self._gesture_info_panel,
             values=values,
             width=10,  # mínimo; sticky="we" + columnconfigure weight=1 lo expande
             height=32,
             state="readonly",
             font=AssetRegistry.fonts(),
-            command=lambda _: self.change_action(),
+            command=lambda _: self._change_action(),
         )
         self.action_selector.grid(row=2, column=0, sticky="we")
 
         self._adjust_current_gesture_effect()
-        paramtype = self.get_paramtype_for_current_action()
+        paramtype = self._get_paramtype_for_current_action()
 
         self.param_picker = ParamPicker(
-            self.gesture_info_panel,
+            self._gesture_info_panel,
             paramtype=paramtype,
-            initial_value=self.get_current_param_value(),
+            initial_value=self._get_current_param_value(),
+            on_change=lambda _: self._determine_save_button_state(),
         )
         self.param_picker.grid(row=3, column=0, sticky="we")
 
-    def change_action(self):
-        self.update_config()
-        selected_action = self.get_selected_action()
-        original_data = get_or_default(
-            self.gestures, self.index_of_local_gesture(), None
-        )
+    def _change_action(self):
+        self._update_config()
+        selected_action = self._get_selected_action()
         original_action = None
 
-        if original_data is not None:
-            original_action = original_data.effect
+        if self._original_gesture is not None:
+            original_action = self._original_gesture.effect
 
         self._change_param_type_form(change_value=selected_action == original_action)
 
-    def get_current_param_value(self) -> float | int | str | bool | None:
-        return self.current_gesture.param
+    def _get_current_param_value(self) -> float | int | str | bool | None:
+        return self._current_gesture.param
 
-    def get_paramtype_for_current_action(self) -> ParamType | None:
+    def _get_paramtype_for_current_action(self) -> ParamType | None:
         action = get_action_from_repr(self.action_selector.get())
 
         return get_actions_parameter_type()[action]
 
     def _change_param_type_form(self, change_value=True):
-        required_param_type = get_actions_parameter_type()[self.get_selected_action()]
-        value = self.get_current_param_value() if change_value else None
+        required_param_type = get_actions_parameter_type()[self._get_selected_action()]
+        value = self._get_current_param_value() if change_value else None
 
         self.param_picker.set_param_type(required_param_type, value)
 
-    def display_name_field(self):
-        self.name_field_box = ctk.CTkFrame(self.gesture_info_panel)
+    def _display_name_field(self):
+        self.name_field_box = ctk.CTkFrame(self._gesture_info_panel)
         self.name_field_box.columnconfigure(1, weight=1)
 
-        text = self.current_gesture.name
+        text = self._current_gesture.name
         self.name_field = ctk.CTkEntry(
             self.name_field_box,
             height=31,
@@ -570,8 +571,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         self.name_field_box.grid(row=1, column=0, sticky="we")
 
-    def check_name(self):
-        if self.current_gesture.name == "":
+    def _check_name_validity(self):
+        if self._current_gesture.name == "":
             self._inner_state = FormState(
                 False, "El nombre del gesto no ha sido porporcionado"
             )
@@ -579,32 +580,16 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self._inner_state = FormState(True, None)
 
     def _update_name(self):
-        self.current_gesture.name = self.name_field.get().strip(" \n\r")
-        self.check_name()
+        self._current_gesture.name = self.name_field.get().strip(" \n\r")
+        self._check_name_validity()
+        self._determine_save_button_state()
 
-    # SETEA EL GESTO QUE SE ESTÁ CONFIGURANDO A PARTIR DEL VALOR
-    # SELECCIONADO EN EL COMBOBOX DE LOS GESTOS
-    def set_current_gesture(self):
-        gesture_name = self.gesture_selector.get()
-        matches = [g for g in self.gestures if g.name == gesture_name]
-
-        # SINGNIFICA QUE EL GESTO ES NUEVO
-        if len(matches) == 0:
-            return
-
-        self.delete_button.configure(state=ctk.NORMAL)
-
-        self.current_gesture = copy.deepcopy(matches[0])
-        self._set_current_gesture_selector()
-        self._adjust_current_configuration_display()
-        self._change_param_type_form()
-
-    def display_current_gesture_selector(self):
+    def _display_current_gesture_selector(self):
         self.gesture_selector = GestureBadgeSelector(
-            self.gesture_info_panel,
-            gestures=self.gestures,
+            self._gesture_info_panel,
+            gestures=self._gestures,
             on_select=lambda id: self._on_badge_selected(id),
-            selected_id=self.current_gesture.id if self.current_gesture else --1,
+            selected_id=self._current_gesture.id if self._current_gesture else --1,
         )
         self.gesture_selector.grid(row=0, column=0, sticky="we", pady=(0, 8))
 
@@ -612,38 +597,40 @@ class SettingsForm(ctk.CTkScrollableFrame):
         if id == -1:
             self._new_gesture()
 
-        matches = [g for g in self.gestures if g.id == id]
+        matches = [g for g in self._gestures if g.id == id]
 
         if not matches:
             return
 
         self.delete_button.configure(state=ctk.NORMAL)
 
-        self.current_gesture = copy.deepcopy(matches[0])
+        self._current_gesture = copy.deepcopy(matches[0])
         self._adjust_current_configuration_display()
         self._change_param_type_form()
+
+        self.save_button.configure(state=ctk.DISABLED)
 
     def _set_current_gesture_selector(self, is_new=False):
         if is_new:
             self.gesture_selector.insert_new(
-                self.current_gesture.name, self.current_gesture.id
+                self._current_gesture.name, self._current_gesture.id
             )
             self.gesture_selector.after(
                 300, lambda: self.gesture_selector._parent_canvas.xview_moveto(1.0)
             )
         else:
             self.gesture_selector.refresh(
-                self.gestures, selected_id=self.current_gesture.id
+                self._gestures, selected_id=self._current_gesture.id
             )
 
-    def get_selected_action(self) -> Action:
+    def _get_selected_action(self) -> Action:
         selected_action = self.action_selector.get()
         return get_action_from_repr(selected_action)
 
     # LEE TODOS LOS WIDGETS DEL FORMULARIO Y CAMBIA EL GESTURE DATA
     # DE ACUERDO A LA NUEVA CONFIGURACION
-    def update_config(self):
-        settings = self.current_gesture.settings
+    def _update_config(self):
+        settings = self._current_gesture.settings
 
         # ACTUALIZAR LAS MANOS
         is_left_hand_active = bool(self.left_hand_activator.get())
@@ -662,7 +649,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         settings.profile = (left_hand_profile, right_hand_profile)
 
         # ACTUALIZAR LOS DEDOS VISIBLES MARCADOS
-        all_checkboxes = self.get_fingers_selector_checkboxes()
+        all_checkboxes = self._get_fingers_selector_checkboxes()
         hands_fingers = settings.visibleFingers
 
         for idx, ch in enumerate(all_checkboxes):
@@ -696,11 +683,11 @@ class SettingsForm(ctk.CTkScrollableFrame):
         )
 
         #  ACTUALIZAR EL ACTION
-        self.current_gesture.effect = self.get_selected_action()
+        self._current_gesture.effect = self._get_selected_action()
 
         self._adjust_current_configuration_display()
 
-    def get_hand_profile_values(self):
+    def _get_hand_profile_values(self):
         profiles = [
             None,
             HandProfile.PALM,
@@ -709,7 +696,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         return [get_repr_for_hand_profile(p) for p in profiles]
 
-    def get_action_values(self):
+    def _get_action_values(self):
         actions = [
             Action.OPEN_FILE,
             Action.OPEN_FOLDER,
@@ -721,27 +708,27 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         return [get_repr_for_action(p) for p in actions]
 
-    def display_active_hands_selector(self):
+    def _display_active_hands_selector(self):
         # ── Cajas de mano ────────────────────────────────────────────────
         self.left_hand_activator = HandToggleBox(
-            self.form_panel,
+            self._form_panel,
             icon=AssetRegistry.icons("hand-1", self._HAND_ICON_SCALE),
             icon_active=AssetRegistry.icons("hand-1-darker", self._HAND_ICON_SCALE),
             label="Mano izquierda",
             is_active=False,
-            on_toggle=lambda _: self.update_config(),
+            on_toggle=lambda _: self._update_config(),
         )
         self.left_hand_activator.grid(
             row=0, column=0, padx=(0, 8), pady=(0, 16), sticky="we"
         )
 
         self.right_hand_activator = HandToggleBox(
-            self.form_panel,
+            self._form_panel,
             icon=AssetRegistry.icons("hand-2", self._HAND_ICON_SCALE),
             icon_active=AssetRegistry.icons("hand-2-darker", self._HAND_ICON_SCALE),
             label="Mano derecha",
             is_active=False,
-            on_toggle=lambda _: self.update_config(),
+            on_toggle=lambda _: self._update_config(),
         )
         self.right_hand_activator.grid(
             row=0, column=1, padx=(8, 0), pady=(0, 16), sticky="we"
@@ -753,7 +740,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         # ── Perfil de manos ──────────────────────────────────────────────
         self.profile_label = ctk.CTkLabel(
-            self.form_panel,
+            self._form_panel,
             text="PERFIL DE LAS MANOS",
             font=AssetRegistry.fonts(13, "bold"),
             text_color="#6b7280",
@@ -761,33 +748,33 @@ class SettingsForm(ctk.CTkScrollableFrame):
         )
         self.profile_label.grid(row=1, column=0, columnspan=2, sticky="we", pady=(0, 8))
 
-        values = self.get_hand_profile_values()
+        values = self._get_hand_profile_values()
 
         self.left_hand_profile_selector = ctk.CTkComboBox(
-            self.form_panel,
+            self._form_panel,
             width=10,
             height=34,
             state="readonly",
             values=values,
-            command=lambda _: self.update_config(),
+            command=lambda _: self._update_config(),
             font=AssetRegistry.fonts(),
         )
         self.left_hand_profile_selector.set(values[0])
         self.left_hand_profile_selector.grid(row=2, column=0, padx=(0, 8), sticky="we")
 
         self.right_hand_profile_selector = ctk.CTkComboBox(
-            self.form_panel,
+            self._form_panel,
             width=10,
             height=34,
             state="readonly",
             values=values,
-            command=lambda _: self.update_config(),
+            command=lambda _: self._update_config(),
             font=AssetRegistry.fonts(),
         )
         self.right_hand_profile_selector.set(values[0])
         self.right_hand_profile_selector.grid(row=2, column=1, padx=(8, 0), sticky="we")
 
-    def get_fingers_selector_checkboxes(self) -> List[ctk.CTkCheckBox]:
+    def _get_fingers_selector_checkboxes(self) -> List[ctk.CTkCheckBox]:
         return [
             cast(ctk.CTkCheckBox, ch)
             for n, ch in self.checkbox_collection_panel.children.items()
@@ -797,17 +784,17 @@ class SettingsForm(ctk.CTkScrollableFrame):
     # Configura el formulario de forma que concuerde con la
     # informacion del gesto que se esta configurando
     def _adjust_current_configuration_display(self):
-        hands_fingers = self.current_gesture.settings.visibleFingers
+        hands_fingers = self._current_gesture.settings.visibleFingers
 
         # ADJUST GESTURE NAME
         self.name_field.delete(0, "end")
-        self.name_field.insert(0, self.current_gesture.name)
+        self.name_field.insert(0, self._current_gesture.name)
 
-        self.check_name()
+        self._check_name_validity()
 
         # ADJUST HANDS NUMBER AND HAND PROFILE
-        is_left_active, is_right_active = self.current_gesture.settings.hands
-        set_profile_left, set_profile_right = self.current_gesture.settings.profile
+        is_left_active, is_right_active = self._current_gesture.settings.hands
+        set_profile_left, set_profile_right = self._current_gesture.settings.profile
 
         if not is_left_active and not is_right_active:
             self._inner_state = FormState(
@@ -836,7 +823,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
                     get_repr_for_hand_profile(set_profile_left),
                     get_repr_for_hand_profile(set_profile_right),
                 ],
-                False: [self.get_hand_profile_values()[0]] * 2,
+                False: [self._get_hand_profile_values()[0]] * 2,
             },
             "state": {True: "readonly", False: ctk.DISABLED},
         }
@@ -853,7 +840,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 state=values["state"][is_active]
             )
 
-        all_checkboxes = self.get_fingers_selector_checkboxes()
+        all_checkboxes = self._get_fingers_selector_checkboxes()
         is_hand_active = [is_left_active, is_right_active]
 
         # ADJUST FINGERS
@@ -875,11 +862,12 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         # ADJUST ACTION
         self._adjust_current_gesture_effect()
+        self._determine_save_button_state()
 
     def _adjust_current_gesture_effect(self):
-        self.action_selector.set(get_repr_for_action(self.current_gesture.effect))
+        self.action_selector.set(get_repr_for_action(self._current_gesture.effect))
 
-    def display_visible_fingers_selector(self):
+    def _display_visible_fingers_selector(self):
         fingers_names = ["Pulgar", "Índice", "Medio", "Anular", "Meñique"]
         fingers_repr = [
             Finger.THUMB_FINGER,
@@ -890,7 +878,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         ]
 
         self.checkbox_collection_panel = ctk.CTkFrame(
-            self.form_panel, fg_color="transparent"
+            self._form_panel, fg_color="transparent"
         )
         self.checkbox_collection_panel.grid(
             row=4, column=0, pady=40, sticky="we", columnspan=2
@@ -905,7 +893,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 checkbox = ctk.CTkCheckBox(
                     self.checkbox_collection_panel,
                     text=name,
-                    command=self.update_config,
+                    command=self._update_config,
                     font=AssetRegistry.fonts(),
                 )
                 checkbox.grid(row=idx, column=hand_number, pady=10)
@@ -913,46 +901,46 @@ class SettingsForm(ctk.CTkScrollableFrame):
                 # GUARDAR QUE DEDO REPRESENTA EL CHECKBOX
                 setattr(checkbox, "stands_for", fingers_repr[idx])
 
-    def index_of_local_gesture(self) -> int:
+    def _index_of_local_gesture(self) -> int:
         idx = -1
 
-        for i, g in enumerate(self.gestures):
-            if g.id == self.current_gesture.id:
+        for i, g in enumerate(self._gestures):
+            if g.id == self._current_gesture.id:
                 idx = i
 
         return idx
 
     def _update_local_gesture(self):
-        idx = self.index_of_local_gesture()
+        idx = self._index_of_local_gesture()
 
         if idx == -1:
-            self.gestures.append(self.current_gesture)
+            self._gestures.append(self._current_gesture)
         else:
-            self.gestures[idx] = self.current_gesture
+            self._gestures[idx] = self._current_gesture
 
         self._set_current_gesture_selector(is_new=idx == -1)
 
-    def save_new_config(self):
+    def _save_new_config(self):
         inner_state = self._inner_state
         outer_state = self.param_picker.get_state()
 
         if inner_state.is_valid and outer_state.is_valid:
             self.delete_button.configure(state=ctk.NORMAL)
 
-            self.current_gesture.param = self.param_picker.get_value()
+            self._current_gesture.param = self.param_picker.get_value()
             modification_type = ModificationType.UPDATE
 
-            if self.current_gesture.id != -1:
-                update_gesture(self.current_gesture)
+            if self._current_gesture.id != -1:
+                update_gesture(self._current_gesture)
             else:
                 modification_type = ModificationType.CREATE
-                gesture_width_id = add_gesture(self.current_gesture)
+                gesture_width_id = add_gesture(self._current_gesture)
 
                 if gesture_width_id is not None:
-                    self.current_gesture = gesture_width_id
+                    self._current_gesture = gesture_width_id
 
             Universe.rise().signal(
-                Sidebar, Modification(modification_type, self.current_gesture)
+                Sidebar, Modification(modification_type, self._current_gesture)
             )
 
             self._update_local_gesture()
@@ -964,7 +952,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         is_valid = self._inner_state.is_valid and outer_state.is_valid
 
         if not is_valid:
-            self.notifier.error(
+            self._notifier.error(
                 message=self._inner_state.error_message
                 or outer_state.error_message
                 or ""
@@ -972,11 +960,11 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
             return
 
-        self.notifier.success("✨ Gesto guardado exitosamente ✨")
+        self._notifier.success("✨ Gesto guardado exitosamente ✨")
 
-    def display_save_settings_button(self):
+    def _display_save_settings_button(self):
         self.save_button = ctk.CTkButton(
-            self.form_buttons,
+            self._form_buttons,
             height=31,
             width=120,
             text="Guardar",
@@ -985,41 +973,42 @@ class SettingsForm(ctk.CTkScrollableFrame):
             fg_color="#0f2e1e",
             font=AssetRegistry.fonts(),
             image=AssetRegistry.icons(name="save"),
-            command=self.save_new_config,
+            command=self._save_new_config,
+            state=ctk.DISABLED,
         )
         self.save_button.grid(row=0, column=0, sticky="we", padx=8, pady=10)
 
     def _remove_local_gesture(self):
-        self.gestures = [
+        self._gestures = [
             gesture
-            for gesture in self.gestures
-            if gesture.id != self.current_gesture.id
+            for gesture in self._gestures
+            if gesture.id != self._current_gesture.id
         ]
 
     def _feedback_remove_gesture(self, is_valid: bool = True):
-        notify = self.notifier.success if is_valid else self.notifier.error
+        notify = self._notifier.success if is_valid else self._notifier.error
         message = "Gesto eliminado 💫" if is_valid else "No se pudo eliminar el gesto"
 
         notify(message)
 
     def _delete_current_gesture(self):
-        if self.current_gesture.id == -1:
+        if self._current_gesture.id == -1:
             return
 
         result = True
 
         if confirm("¿Deseas realmente eliminar este gesto?"):
             self._remove_local_gesture()
-            result = remove_gesture(self.current_gesture)
+            result = remove_gesture(self._current_gesture)
         else:
             return
 
         if result:
             Universe.rise().signal(
-                Sidebar, Modification(ModificationType.DELETE, self.current_gesture)
+                Sidebar, Modification(ModificationType.DELETE, self._current_gesture)
             )
 
-            if len(self.gestures) > 0:
+            if len(self._gestures) > 0:
                 self._default_gesture()
 
                 self._set_current_gesture_selector()
@@ -1032,9 +1021,20 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         self._feedback_remove_gesture(result)
 
-    def display_delete_button(self):
+    def _determine_save_button_state(self) -> None:
+        has_changes = (
+            self.name_field.get() != self._original_gesture.name
+            or self._current_gesture.effect != self._original_gesture.effect
+            or self._original_gesture.param != self.param_picker.get_value()
+            or self._current_gesture.settings != self._original_gesture.settings
+        )
+
+        state = ctk.NORMAL if has_changes else ctk.DISABLED
+        self.save_button.configure(state=state)
+
+    def _display_delete_button(self):
         self.delete_button = ctk.CTkButton(
-            self.form_buttons,
+            self._form_buttons,
             height=31,
             width=120,
             text="Eliminar",
@@ -1053,16 +1053,11 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         self.delete_button.configure(state=ctk.DISABLED)
 
-        ptype = get_actions_parameter_type()[self.current_gesture.effect]
+        ptype = get_actions_parameter_type()[self._current_gesture.effect]
 
         self.param_picker.set_param_type(ptype, None)
         self._set_current_gesture_selector()
         self._adjust_current_configuration_display()
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# HandToggleBox — caja de mano activa/inactiva
-# ─────────────────────────────────────────────────────────────────────────────
 
 
 class HandToggleBox(ctk.CTkFrame):

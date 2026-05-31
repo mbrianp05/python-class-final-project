@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Any
+from typing import Any, Callable
 
 import customtkinter as ctk
 
@@ -55,8 +55,12 @@ class BaseParamPanel(ctk.CTkFrame, abc.ABC):
             width=400,
             **kwargs,
         )
+
         self.font_regular = AssetRegistry.fonts(variant="regular")
         self.font_bold = AssetRegistry.fonts(variant="bold")
+
+        self._callback = None
+
         self._build()
 
     # -- API pública --------------------------------------------------------
@@ -76,6 +80,10 @@ class BaseParamPanel(ctk.CTkFrame, abc.ABC):
     @abc.abstractmethod
     def get_state(self) -> FormState:
         """Valida el valor actual y devuelve un FormState."""
+
+    @abc.abstractmethod
+    def on_change(self, callback: Callable[[Any], None]) -> None:
+        """Registra un callback para ejecutar cuando cambia el valor"""
 
 
 # ---------------------------------------------------------------------------
@@ -102,6 +110,12 @@ class BinaryParamPanel(BaseParamPanel):
         ctk.CTkRadioButton(self, text="Desactivar", value=0, **radio_cfg).grid(  # type: ignore
             row=0, column=1, sticky="w", padx=(10, 0)
         )
+
+        if self._callback:
+            self._var.trace_add("write", lambda *_: self._callback(self._var.get()))
+
+    def on_change(self, callback: Callable[[Any], None]) -> None:
+        self._callback = callback
 
     def adjust_value(self, value: Any) -> None:
         self._var.set(int(value) if value is not None else 1)
@@ -146,11 +160,14 @@ class NumericParamPanel(BaseParamPanel):
         )
         self._error_label.grid(row=1, column=0, sticky="w", padx=0)
 
-    def _on_change(self, _value: float) -> None:
+    def _on_change(self, value: float) -> None:
         state = self._entry.get_state()
         self._error_label.configure(
             text="" if state.is_valid else (state.error_message or "")
         )
+
+        if self._callback:
+            self._callback(value)
 
     def adjust_value(self, value: Any) -> None:
         self._entry.delete(0, "end")
@@ -164,6 +181,9 @@ class NumericParamPanel(BaseParamPanel):
 
     def get_state(self) -> FormState:
         return self._entry.get_state()
+
+    def on_change(self, callback: Callable[[Any], None]) -> None:
+        self._callback = callback
 
 
 # ---------------------------------------------------------------------------
@@ -214,8 +234,12 @@ class FileParamPanel(BaseParamPanel):
 
     def _on_browse(self) -> None:
         path = pick_file()
+
         if path:
             self.adjust_value(path)
+
+        if self._callback:
+            self._callback(path)
 
     def adjust_value(self, value: str | None) -> None:
         self._value = value
@@ -242,6 +266,9 @@ class FileParamPanel(BaseParamPanel):
         self._error_label.configure(
             text="" if ok else (self._state.error_message or "")
         )
+
+    def on_change(self, callback: Callable[[Any], None]) -> None:
+        self._callback = callback
 
     def get_value(self) -> str | None:
         return self._value
@@ -297,8 +324,12 @@ class FolderParamPanel(BaseParamPanel):
 
     def _on_browse(self) -> None:
         path = pick_folder()
+
         if path:
             self.adjust_value(path)
+
+        if self._callback:
+            self._callback(path)
 
     def adjust_value(self, value: str | None) -> None:
         self._value = value
@@ -326,6 +357,9 @@ class FolderParamPanel(BaseParamPanel):
             text="" if ok else (self._state.error_message or "")
         )
 
+    def on_change(self, callback: Callable[[Any], None]) -> None:
+        self._callback = callback
+
     def get_value(self) -> str | None:
         return self._value
 
@@ -344,10 +378,11 @@ class ParamPicker(ctk.CTkFrame):
         master: Any,
         paramtype: ParamType | None = ParamType.NUMERIC,
         initial_value: Any = None,
+        on_change: Callable[[Any], None] | None = None,
     ) -> None:
         super().__init__(master, fg_color=_COLORS["bg"])
 
-        # Diccionario { ParamType → instancia de BaseParamPanel }
+        self._callback = on_change
         self._panels: dict[ParamType, BaseParamPanel] = {}
         self._active_type: ParamType | None = None
 
@@ -370,6 +405,10 @@ class ParamPicker(ctk.CTkFrame):
 
         for cls in panel_classes:
             panel = cls(self)
+
+            if self._callback:
+                panel.on_change(self._callback)
+
             self._panels[cls.stands_for] = panel
 
     # -- API pública --------------------------------------------------------
