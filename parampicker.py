@@ -195,7 +195,7 @@ class FileParamPanel(BaseParamPanel):
     stands_for = ParamType.FILE_PATH
 
     def _build(self) -> None:
-        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
 
         # Fila 0: ruta + botón
         self._path_label = ctk.CTkLabel(
@@ -207,7 +207,7 @@ class FileParamPanel(BaseParamPanel):
             anchor="w",
             wraplength=260,
         )
-        self._path_label.grid(row=0, column=0, sticky="w", padx=(0, 12))
+        self._path_label.grid(row=0, column=1, sticky="w", padx=(0, 12))
 
         self._browse_btn = ctk.CTkButton(
             self,
@@ -220,7 +220,7 @@ class FileParamPanel(BaseParamPanel):
             hover_color="#3d3480",
             fg_color="#2d2060",
         )
-        self._browse_btn.grid(row=0, column=1, padx=(0, 10))
+        self._browse_btn.grid(row=0, column=0, padx=(0, 10), sticky="w")
 
         self._error_label = ctk.CTkLabel(
             self,
@@ -289,7 +289,7 @@ class FolderParamPanel(BaseParamPanel):
     stands_for = ParamType.FOLDER_PATH
 
     def _build(self) -> None:
-        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
 
         self._path_label = ctk.CTkLabel(
             self,
@@ -300,7 +300,7 @@ class FolderParamPanel(BaseParamPanel):
             anchor="w",
             wraplength=260,
         )
-        self._path_label.grid(row=0, column=0, sticky="w", padx=(0, 12))
+        self._path_label.grid(row=0, column=1, sticky="w", padx=(0, 12))
 
         self._browse_btn = ctk.CTkButton(
             self,
@@ -313,7 +313,7 @@ class FolderParamPanel(BaseParamPanel):
             hover_color="#3d3480",
             fg_color="#2d2060",
         )
-        self._browse_btn.grid(row=0, column=1, padx=(0, 10))
+        self._browse_btn.grid(row=0, column=0, padx=(0, 10), sticky="w")
 
         self._error_label = ctk.CTkLabel(
             self,

@@ -416,7 +416,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self._gestures = fetch_gestures()
 
         self._is_new = False
-        self._inner_state = FormState(is_valid=True)
 
         self._default_gesture()
 
@@ -564,21 +563,21 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.name_label.grid(row=0, column=0, padx=10, pady=10)
         self.name_field_box.grid(row=2, column=0, sticky="we")
 
-    def _check_name_validity(self):
+    def _get_name_validity(self) -> FormState:
+        state = None
+
         if self._current_gesture.name == "":
-            self._inner_state = FormState(
-                False, "El nombre del gesto no ha sido porporcionado"
-            )
+            state = FormState(False, "El nombre del gesto no ha sido porporcionado")
         else:
-            self._inner_state = FormState(True, None)
+            state = FormState(True, None)
+
+        return state
 
     def _update_name(self):
         self._current_gesture.name = self.name_field.get().strip(" \n\r")
-        self._check_name_validity()
         self._determine_save_button_state()
 
     def _display_current_gesture_selector(self):
-        # row=0: fila de badges
         self.gesture_selector = GestureBadgeSelector(
             self._gesture_info_panel,
             gestures=self._gestures,
@@ -625,6 +624,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self._new_gesture()
 
         matches = [g for g in self._gestures if g.id == id]
+
+        if self.delete_button._state != ctk.NORMAL and id != -1:
+            self.delete_button.configure(state=ctk.NORMAL)
 
         if not matches:
             return
@@ -826,6 +828,19 @@ class SettingsForm(ctk.CTkScrollableFrame):
             if n.startswith("!ctkcheckbox")
         ]
 
+    def _get_hands_validity(self) -> FormState:
+        is_left_active, is_right_active = self._current_gesture.settings.hands
+        state = None
+
+        if not is_left_active and not is_right_active:
+            state = FormState(
+                False, "Al menos una de las dos manos debe ser visible en el gesto"
+            )
+        else:
+            state = FormState(True, None)
+
+        return state
+
     # Configura el formulario de forma que concuerde con la
     # informacion del gesto que se esta configurando
     def _adjust_current_configuration_display(self):
@@ -835,19 +850,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.name_field.delete(0, "end")
         self.name_field.insert(0, self._current_gesture.name)
 
-        self._check_name_validity()
-
         # ADJUST HANDS NUMBER AND HAND PROFILE
         is_left_active, is_right_active = self._current_gesture.settings.hands
         set_profile_left, set_profile_right = self._current_gesture.settings.profile
-
-        if not is_left_active and not is_right_active:
-            self._inner_state = FormState(
-                False, "Al menos una de las dos manos debe ser visible en el gesto"
-            )
-        else:
-            # Resetear el state
-            self._inner_state = FormState(True, None)
 
         form_fields = {
             "hand_activator": (self.left_hand_activator, self.right_hand_activator),
@@ -970,11 +975,21 @@ class SettingsForm(ctk.CTkScrollableFrame):
             Modification(type, data=self._current_gesture)
         )
 
-    def _save_new_config(self):
-        inner_state = self._inner_state
-        outer_state = self.param_picker.get_state()
+    def _get_state(self) -> FormState:
+        form_state = self._get_name_validity()
 
-        if inner_state.is_valid and outer_state.is_valid:
+        if form_state.is_valid is True:
+            form_state = self._get_hands_validity()
+
+        if form_state.is_valid is True:
+            form_state = self.param_picker.get_state()
+
+        return form_state
+
+    def _save_new_config(self):
+        form_state = self._get_state()
+
+        if form_state.is_valid:
             self.delete_button.configure(state=ctk.NORMAL)
 
             self._current_gesture.param = self.param_picker.get_value()
@@ -992,6 +1007,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
             if self.reset_button._state != ctk.DISABLED:
                 self.reset_button.configure(state=ctk.DISABLED)
 
+            if self.delete_button._state != ctk.NORMAL:
+                self.delete_button.configure(state=ctk.NORMAL)
+
             Universe.rise().signal(
                 Sidebar, Modification(modification_type, self._current_gesture)
             )
@@ -1001,15 +1019,11 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self._feedback_state_or_create_success()
 
     def _feedback_state_or_create_success(self):
-        outer_state = self.param_picker.get_state()
-        is_valid = self._inner_state.is_valid and outer_state.is_valid
+        state = self._get_state()
+        is_valid = state.is_valid
 
         if not is_valid:
-            self._notifier.error(
-                message=self._inner_state.error_message
-                or outer_state.error_message
-                or ""
-            )
+            self._notifier.error(message=state.error_message or "")
 
             return
 
@@ -1111,6 +1125,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
         if self.save_button._state != ctk.DISABLED:
             self.save_button.configure(state=ctk.DISABLED)
+
+        if self.delete_button._state != ctk.DISABLED:
+            self.delete_button.configure(state=ctk.DISABLED)
 
         if self.reset_button._state != ctk.DISABLED:
             self.reset_button.configure(state=ctk.DISABLED)
