@@ -1084,7 +1084,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
                     Modification(ModificationType.DELETE, data=self._current_gesture)
                 )
                 self._default_gesture()
-                # Cambiar al gesture actual
                 self._set_current_gesture_selector()
 
                 self._adjust_current_configuration_display()
@@ -1096,6 +1095,8 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
             if self.reset_button._state != ctk.DISABLED:
                 self.reset_button.configure(state=ctk.DISABLED)
+            if self.save_button._state != ctk.DISABLED:
+                self.save_button.configure(state=ctk.DISABLED)
 
         self._feedback_remove_gesture(result)
 
