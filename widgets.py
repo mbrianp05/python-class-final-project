@@ -1007,6 +1007,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
             if self.reset_button._state != ctk.DISABLED:
                 self.reset_button.configure(state=ctk.DISABLED)
 
+            if self.save_button._state != ctk.DISABLED:
+                self.save_button.configure(state=ctk.DISABLED)
+
             if self.delete_button._state != ctk.NORMAL:
                 self.delete_button.configure(state=ctk.NORMAL)
 
