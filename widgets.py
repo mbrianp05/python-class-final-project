@@ -96,9 +96,7 @@ class GestureItem(ctk.CTkFrame):
         name = self._name
         action = self._action
 
-        self.icon_box = ctk.CTkFrame(
-            self, fg_color=self._get_color(action), corner_radius=10
-        )
+        self.icon_box = ctk.CTkFrame(self, corner_radius=10, fg_color="transparent")
 
         description_frame = ctk.CTkFrame(self, fg_color="transparent")
         description_frame.rowconfigure((0, 1), weight=1)
@@ -124,9 +122,12 @@ class GestureItem(ctk.CTkFrame):
             self.icon_box,
             text="",
             image=self._get_icon(action),  # type: ignore
-            height=36,
+            height=40,
+            width=40,
+            fg_color=self._get_color(action),
+            corner_radius=10,
         )
-        self.icon_label.grid(row=0, column=0, padx=8, sticky="ns")
+        self.icon_label.grid(row=0, column=0, sticky="ns")
 
         self.icon_box.grid(row=0, column=0, padx=7, pady=4, rowspan=2)
         description_frame.grid(row=0, column=1, sticky="we", padx=7, pady=4)
@@ -628,11 +629,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
         if not matches:
             return
 
-        self.delete_button.configure(state=ctk.NORMAL)
-        self.reset_button.configure(state=ctk.NORMAL)
-
         self._current_gesture = copy.deepcopy(matches[0])
         self._original_gesture = copy.deepcopy(matches[0])
+
         self._adjust_current_configuration_display()
         self._change_param_type_form()
 
@@ -642,18 +641,33 @@ class SettingsForm(ctk.CTkScrollableFrame):
         if self.reset_button._state != ctk.DISABLED:
             self.reset_button.configure(state=ctk.DISABLED)
 
-    def _set_current_gesture_selector(self, is_new=False):
-        if is_new:
-            self.gesture_selector.insert_new(
+    def _set_current_gesture_selector(self, modification: Modification | None = None):
+        if modification is None:
+            self.gesture_selector.set_selected(self._current_gesture.id)
+
+            return
+
+        if modification.type == ModificationType.CREATE:
+            self.gesture_selector.insert_badge(
                 self._current_gesture.name, self._current_gesture.id
             )
             self.gesture_selector.after(
                 300, lambda: self.gesture_selector._parent_canvas.xview_moveto(1.0)
             )
-        else:
-            self.gesture_selector.refresh(
-                self._gestures, selected_id=self._current_gesture.id
+
+            return
+
+        if modification.type == ModificationType.DELETE:
+            self.gesture_selector.remove_badge(self._current_gesture.id)
+
+            return
+
+        if modification.type == ModificationType.UPDATE:
+            self.gesture_selector.update_badge(
+                self._current_gesture.name, self._current_gesture.id
             )
+
+            return
 
     def _get_selected_action(self) -> Action:
         selected_action = self.action_selector.get()
@@ -952,7 +966,10 @@ class SettingsForm(ctk.CTkScrollableFrame):
             self._gestures[idx] = self._current_gesture
 
         self._original_gesture = self._current_gesture
-        self._set_current_gesture_selector(is_new=idx == -1)
+        type = ModificationType.CREATE if idx == -1 else ModificationType.UPDATE
+        self._set_current_gesture_selector(
+            Modification(type, data=self._current_gesture)
+        )
 
     def _save_new_config(self):
         inner_state = self._inner_state
@@ -1046,9 +1063,14 @@ class SettingsForm(ctk.CTkScrollableFrame):
             )
 
             if len(self._gestures) > 0:
+                # Eliminar el gesture del gesture selector
+                self._set_current_gesture_selector(
+                    Modification(ModificationType.DELETE, data=self._current_gesture)
+                )
                 self._default_gesture()
-
+                # Cambiar al gesture actual
                 self._set_current_gesture_selector()
+
                 self._adjust_current_configuration_display()
                 self._change_param_type_form()
 
@@ -1263,9 +1285,22 @@ class GestureBadgeSelector(ctk.CTkScrollableFrame):
         if selected_id:
             self.set_selected(selected_id)
 
-    def insert_new(self, name: str, id: int) -> None:
+    def insert_badge(self, name: str, id: int) -> None:
         self._add_badge(name, id)
         self.set_selected(id)
+
+    def update_badge(self, name: str, id: int) -> None:
+        badge = self._badges[id]
+        label = badge.winfo_children()[0] if badge.winfo_children() else None
+
+        if label is None:
+            return
+
+        label.configure(text=name)
+
+    def remove_badge(self, id: int) -> None:
+        self._badges[id].after(400, self._badges[id].destroy)
+        self._badges.pop(id)
 
     # ── Internos ─────────────────────────────────────────────────────────
 
