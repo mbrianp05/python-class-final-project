@@ -788,8 +788,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.profile_label = ctk.CTkLabel(
             self._form_panel,
             text="PERFIL DE LAS MANOS",
-            font=AssetRegistry.fonts(13, "bold"),
-            text_color="#6b7280",
+            font=AssetRegistry.fonts(17, variant="regular"),
             anchor="w",
         )
         self.profile_label.grid(row=1, column=0, columnspan=2, sticky="we", pady=(0, 8))

@@ -17,7 +17,15 @@ class NumericInput(ctk.CTkEntry):
         onchange=None,
         **kwargs,
     ):
-        super().__init__(master, width=width, height=height, font=font, **kwargs)
+        super().__init__(
+            master,
+            width=width,
+            height=height,
+            font=font,
+            border_color="#181818",
+            fg_color="#181818",
+            **kwargs,
+        )
         self.min = min
         self.max = max
         self.allow_float = allow_float
