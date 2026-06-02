@@ -414,11 +414,9 @@ class SettingsForm(ctk.CTkScrollableFrame):
         super().__init__(master, orientation="vertical", fg_color="transparent")
 
         self._gestures = fetch_gestures()
-
         self._is_new = False
 
         self._default_gesture()
-
         self._set_layout()
 
         self._left_col = ctk.CTkFrame(self, fg_color="transparent")
@@ -442,7 +440,6 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self._form_panel.columnconfigure((0, 1), weight=1, pad=30)
         self._form_panel.grid(row=0, column=1, padx=40, pady=(40, 0))
 
-        # form_buttons en _left_col row=1 → siempre al fondo de la columna izquierda
         self._form_buttons = ctk.CTkFrame(
             self._left_col, fg_color="transparent", border_width=0
         )
@@ -494,7 +491,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         self.action_selector = ctk.CTkComboBox(
             self._gesture_info_panel,
             values=values,
-            width=10,  # mínimo; sticky="we" + columnconfigure weight=1 lo expande
+            width=10,
             height=32,
             state="readonly",
             font=AssetRegistry.fonts(),

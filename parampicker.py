@@ -398,10 +398,6 @@ class ParamPicker(ctk.CTkFrame):
     # -- Registro de paneles ------------------------------------------------
 
     def _register_panels(self) -> None:
-        """
-        Instancia y registra todos los sub-pickers disponibles.
-        Para añadir uno nuevo, agrégalo aquí.
-        """
         panel_classes: list[type[BaseParamPanel]] = [
             BinaryParamPanel,
             NumericParamPanel,
