@@ -969,7 +969,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
         else:
             self._gestures[idx] = self._current_gesture
 
-        self._original_gesture = self._current_gesture
+        self._original_gesture = copy.deepcopy(self._current_gesture)
         type = ModificationType.CREATE if idx == -1 else ModificationType.UPDATE
         self._set_current_gesture_selector(
             Modification(type, data=self._current_gesture)
@@ -1102,7 +1102,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
 
     def _determine_save_button_state(self) -> None:
         has_changes = (
-            self.name_field.get() != self._original_gesture.name
+            self._current_gesture.name != self._original_gesture.name
             or self._current_gesture.effect != self._original_gesture.effect
             or self._original_gesture.param != self.param_picker.get_value()
             or self._current_gesture.settings != self._original_gesture.settings
