@@ -47,7 +47,7 @@ class Gesture[T: str | float | int]:
 class GestureRecognition:
     def __init__(self, gestures: List[Gesture]):
         # Data para comparar si hay cambios y entonces ejecutar un nuevo gesto
-        self.last_data: GestureData | None = None
+        self.recent_match: bool = False
         self.current_data: GestureData | None = None
 
         self.can_do_gesture: bool = True
@@ -74,9 +74,9 @@ class GestureRecognition:
             base_options=base_options,
             running_mode=vision.RunningMode.IMAGE,
             num_hands=2,
-            min_hand_detection_confidence=0.9,
-            min_hand_presence_confidence=0.9,
-            min_tracking_confidence=0.9,
+            min_hand_detection_confidence=0.3,
+            min_hand_presence_confidence=0.3,
+            min_tracking_confidence=0.3,
         )
 
         self.detector = vision.HandLandmarker.create_from_options(self.options)
@@ -91,18 +91,6 @@ class GestureRecognition:
         self.finger_pip_indices = [3, 6, 10, 14, 18]  # Articulaciones inferiores
         # self.finger_names = ["Pulgar", "Índice", "Medio", "Anular", "Meñique"]
         self.finger_names = [i.value for i in Finger]
-
-    # Condición necesaria para habilitar
-    # la ejecucion de gestos tras un gesto hecho
-    # Se analiza el frame y si cunple cierta condicion se
-    # vuelve True la prop can_do_gesture
-    def _check_to_enable_gestures(self, frame):
-        self.can_do_gesture = (
-            True
-            if (self.current_data is not None)
-            and (self.last_data is None or self.current_data != self.last_data)
-            else False
-        )
 
     # PRUEBA ESTA FUNCION Y DEBUGGEA LO QUE DEVUELVE
     # Develve la info del frame actual
@@ -213,26 +201,34 @@ class GestureRecognition:
     # Método principal, se encarga de manejar la lógica de ejecución
     # de los gestos
     def exec_on_detection(self, frame, highlight_gesture):
+        # Detectar gestos en el frame actual
         self.current_data = self._retrieve_gesture_data(frame)
-        self._check_to_enable_gestures(frame)
+        # Estado necesaria para habilitar la ejecucion de gestos:
+        # • No se ha ejecutado un gesto recientemente o ...
+        # • No se han detectado gestos en el frame actual
+        self.can_do_gesture = (not self.recent_match) or (self.current_data is None)
 
-        if self.can_do_gesture:
-            for i, g in enumerate(self.gestures):
-                if self.current_data == g.settings:
-                    if g.param is None:
-                        effects_functions()[g.effect]()
+        # Si puede hacer gestos y se detecta alguno ...
+        if self.can_do_gesture and self.current_data is not None:
+            # Buscar coincidencias con los gestos reconocidos
+            for i, gest in enumerate(self.gestures):
+                # Si se reconoce el gesto detectado ...
+                if self.current_data == gest.settings:
+                    # Se ha encontrado una coincidencia ...
+                    self.recent_match = True
+                    # Se ejecutan las acciones acorde a los argumentos ...
+                    if gest.param is None:
+                        effects_functions()[gest.effect]()
                     else:
-                        effects_functions()[g.effect](g.param)
+                        effects_functions()[gest.effect](gest.param)
+                    # Se resalta el item del gesto en pantalla ...
                     highlight_gesture(i)
+                    # Y se deja de buscar, aunque no debe haber repeticiones
                     break
-
-        self.can_do_gesture = False
-        self.last_data = self.current_data
-        # Llamar a __check_to_enable_gestures si la prop can_do_gesture es True entonces ->
-        # Obtener el GestureData info del frame actual con el metood __retrieve_gesture_data
-        # Si es diferente a la anterior
-        # Buscar en la lista de gestos cual data coincide y ejecutar el primero
-        # que encuentre
-
-        # cambiar self.can_do_gesture a False hasta que la condicion necesaria se cumpla
-        # self._retrieve_gesture_data(frame)
+        # En caso contrario ...
+        else:
+            # Si se ha ejecutado un gesto recientemente ...
+            # No se han detectado gestos en el frame actual ...
+            # Y, por ende, si se pueden realizar gestos ...
+            # Volver al estado inicial: no se han detectado gestos recientemente
+            self.recent_match = not (self.recent_match and self.can_do_gesture)

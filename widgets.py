@@ -315,9 +315,9 @@ class Camera(ctk.CTkFrame):
         self.detection_badge = ctk.CTkFrame(
             self,
             corner_radius=20,
-            fg_color=self._BADGE_OK_BG,
+            fg_color=self._BADGE_BLOCKED_BG,
             border_width=1,
-            border_color=self._BADGE_OK_TEXT,
+            border_color=self._BADGE_BLOCKED_TEXT,
         )
 
         self._badge_icon = ctk.CTkLabel(
@@ -330,9 +330,9 @@ class Camera(ctk.CTkFrame):
 
         self._badge_label = ctk.CTkLabel(
             self.detection_badge,
-            text="Detección activa",
+            text="Detección bloqueada",
             font=AssetRegistry.fonts(size=14, variant="regular"),
-            text_color=self._BADGE_OK_TEXT,
+            text_color=self._BADGE_BLOCKED_TEXT,
             fg_color="transparent",
         )
         self._badge_label.grid(row=0, column=1, padx=(0, 12), pady=4)
