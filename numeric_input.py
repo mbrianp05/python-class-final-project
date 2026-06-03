@@ -1,6 +1,9 @@
+from typing import Any, Dict
+
 import customtkinter as ctk
 
 from utilityclasses import FormState
+from utils import get_or_default
 
 
 class NumericInput(ctk.CTkEntry):
@@ -32,18 +35,28 @@ class NumericInput(ctk.CTkEntry):
         self.allow_negatives = allow_negatives
 
         self.onchange = onchange
+        self._check_values()
 
-        if not allow_negatives and min is not None:
+        self.variable = ctk.StringVar()
+        self.variable.trace_add("write", lambda *_: self.on_entry_change())
+        self.configure(textvariable=self.variable)
+
+    def set_requirements(self, reqs: Dict[str, Any]) -> None:
+        self.min = get_or_default(reqs, "min", None)
+        self.max = get_or_default(reqs, "max", None)
+        self.allow_float = get_or_default(reqs, "allow_float", True)
+        self.allow_negatives = get_or_default(reqs, "allow_negatives", True)
+
+        self._check_values()
+
+    def _check_values(self) -> None:
+        if not self.allow_negatives and self.min is not None:
             raise ValueError(
                 "Min value cannot be assigned when negative valus are not allowed"
             )
 
         if not self.allow_negatives:
-            min = 0
-
-        self.variable = ctk.StringVar()
-        self.variable.trace_add("write", lambda *_: self.on_entry_change())
-        self.configure(textvariable=self.variable)
+            self.min = 0
 
     def on_entry_change(self):
         data = self.variable.get()
@@ -51,12 +64,18 @@ class NumericInput(ctk.CTkEntry):
         if data == "" or data == "-":
             return
 
-        can_have_decimals = (
-            data.count(".") <= 1 if self.allow_float else data.count(".") == 0
-        )
+        valid = True
+
+        try:
+            float(data)
+        except ValueError:
+            valid = False
+
+        if not self.allow_float:
+            valid = float(data) == int(data)
 
         if data != "":
-            if not data.isdigit() and not can_have_decimals:
+            if not valid:
                 self.variable.set(data[:-1])
                 return
 
@@ -93,7 +112,7 @@ class NumericInput(ctk.CTkEntry):
             return state
 
         if self.max is not None and k > self.max:
-            state.error_message = f"El valor introducido debe ser mayor que {self.max}"
+            state.error_message = f"El valor introducido debe ser menor que {self.max}"
 
             return state
 
