@@ -10,7 +10,7 @@
 
 import asyncio
 import subprocess
-from typing import Callable, Dict
+from typing import Any, Callable, Dict
 
 from PIL import ImageGrab
 from pycaw.pycaw import AudioUtilities
@@ -19,6 +19,15 @@ from winrt.windows.devices.radios import Radio, RadioKind, RadioState
 import utils
 from universe import Universe
 from utilityclasses import Action, ParamType
+
+
+def get_actions_param_requirements(action: Action) -> Dict[str, Any]:
+    actions_requirements = {
+        Action.RUN_PROGRAM: {"filetypes": [("Archivo EXE", "*.exe")]},
+        Action.SET_VOLUME: {"min": -1, "max": 1},
+    }
+
+    return utils.get_or_default(actions_requirements, action, None) or {}
 
 
 def get_actions_parameter_type() -> Dict[Action, ParamType | None]:

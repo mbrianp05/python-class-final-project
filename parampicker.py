@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Callable
+from typing import Any, Callable, Dict
 
 import customtkinter as ctk
 
@@ -45,7 +45,7 @@ _PATH_MAX_LEN = 45
 
 
 class BaseParamPanel(ctk.CTkFrame, abc.ABC):
-    stands_for: ParamType  # declarado en cada subclase
+    stands_for: ParamType
 
     def __init__(self, master: Any, **kwargs: Any) -> None:
         super().__init__(
@@ -56,6 +56,8 @@ class BaseParamPanel(ctk.CTkFrame, abc.ABC):
             **kwargs,
         )
 
+        self._requirements: Dict[str, Any] = {}
+
         self.font_regular = AssetRegistry.fonts(variant="regular")
         self.font_bold = AssetRegistry.fonts(variant="bold")
 
@@ -63,11 +65,14 @@ class BaseParamPanel(ctk.CTkFrame, abc.ABC):
 
         self._build()
 
-    # -- API pública --------------------------------------------------------
-
     @abc.abstractmethod
     def _build(self) -> None:
         """Construye los widgets internos."""
+
+    # -- API pública --------------------------------------------------------
+
+    def set_requirements(self, reqs: Dict[str, Any]) -> None:
+        self._requirements = reqs
 
     @abc.abstractmethod
     def adjust_value(self, value: Any) -> None:
@@ -83,7 +88,7 @@ class BaseParamPanel(ctk.CTkFrame, abc.ABC):
 
     @abc.abstractmethod
     def on_change(self, callback: Callable[[Any], None]) -> None:
-        """Registra un callback para ejecutar cuando cambia el valor"""
+        """Registra un callback para ejecutar cuando cambia el valor."""
 
 
 # ---------------------------------------------------------------------------
@@ -236,7 +241,7 @@ class FileParamPanel(BaseParamPanel):
         self._state = FormState(is_valid=False, error_message="Sin archivo")
 
     def _on_browse(self) -> None:
-        path = pick_file()
+        path = pick_file(**self._requirements)
 
         if path:
             self.adjust_value(path)
@@ -385,8 +390,11 @@ class ParamPicker(ctk.CTkFrame):
         paramtype: ParamType | None = ParamType.NUMERIC,
         initial_value: Any = None,
         on_change: Callable[[Any], None] | None = None,
+        requirements: Dict[str, Any] = {},
     ) -> None:
         super().__init__(master, fg_color=_COLORS["bg"])
+
+        self._requirements = requirements
 
         self._callback = on_change
         self._panels: dict[ParamType, BaseParamPanel] = {}
@@ -431,13 +439,27 @@ class ParamPicker(ctk.CTkFrame):
         if active_panel is None:
             raise KeyError(f"No hay panel registrado para ParamType.{paramtype}")
 
+        active_panel.set_requirements(self._requirements)
+
         active_panel.adjust_value(initial_value)
         active_panel.pack(fill="both", expand=True)
+
+    def set_requirements(self, reqs: Dict[str, Any]) -> None:
+        if self._active_type is None:
+            return
+
+        active_panel = self._panels.get(self._active_type)
+
+        if active_panel is None:
+            return
+
+        active_panel.set_requirements(reqs)
 
     def get_value(self) -> Any:
         """Devuelve el valor del panel activo, o None si no hay ninguno."""
         if self._active_type is None:
             return None
+
         return self._panels[self._active_type].get_value()
 
     def get_state(self) -> FormState:

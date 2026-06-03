@@ -8,7 +8,7 @@ import tksvg
 from customtkinter import CTkFrame
 from PIL import Image
 
-from actions import get_actions_parameter_type
+from actions import get_actions_param_requirements, get_actions_parameter_type
 from gesture import Gesture, GestureData, GestureRecognition, HandProfile
 from loader import AssetRegistry
 from notifier import Notifier
@@ -507,6 +507,7 @@ class SettingsForm(ctk.CTkScrollableFrame):
             paramtype=paramtype,
             initial_value=self._get_current_param_value(),
             on_change=lambda _: self._determine_save_button_state(),
+            requirements=get_actions_param_requirements(self._current_gesture.effect),
         )
         self.param_picker.grid(row=4, column=0, sticky="we")
 
@@ -533,6 +534,10 @@ class SettingsForm(ctk.CTkScrollableFrame):
         value = self._get_current_param_value() if change_value else None
 
         self.param_picker.set_param_type(required_param_type, value)
+
+        self.param_picker.set_requirements(
+            get_actions_param_requirements(self._current_gesture.effect)
+        )
 
     def _display_name_field(self):
         self.name_field_box = ctk.CTkFrame(self._gesture_info_panel)

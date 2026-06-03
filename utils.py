@@ -76,13 +76,9 @@ def supress_warnings():
     )
 
 
-def pick_file() -> str:
+def pick_file(filetypes=[("Todos los archivos", "*.*")]) -> str:
     return filedialog.askopenfilename(
-        initialdir="/",
-        title="Selecciona un archivo",
-        filetypes=[
-            ("Todos los archivos", "*.*"),
-        ],
+        initialdir="/", title="Selecciona un archivo", filetypes=filetypes
     )
 
 
