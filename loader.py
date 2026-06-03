@@ -66,6 +66,7 @@ class AssetRegistry:
         "mark": "./icons/mark.svg",
         "reset": "./icons/reset.svg",
         "x": "./icons/x.svg",
+        "app_icon": "./icons/app-icon.svg",
     }
 
     @classmethod

@@ -1,6 +1,7 @@
 from typing import Dict
 
 import customtkinter as ctk
+import ctypes
 
 from loader import AssetRegistry
 from uiclasses import View
@@ -30,8 +31,17 @@ class App(ctk.CTk, BaseNavigator):
 
         Universe.rise().compass(self)
 
+        self._set_icon()
         self._set_views()
         self.maximize_window()
+
+    def _set_icon(self) -> None:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            "python.gesture.recognition.app"
+        )
+        self.wm_iconbitmap()
+        self.icon_file = AssetRegistry.icons(name="app_icon", scale=32)
+        self.iconphoto(True, self.icon_file)
 
     def _set_views(self) -> None:
         self._views_classes[View.DETECTION_VIEW] = GestureDetectionView
