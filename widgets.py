@@ -323,7 +323,7 @@ class Camera(ctk.CTkFrame):
         self._badge_icon = ctk.CTkLabel(
             self.detection_badge,
             text="",
-            image=AssetRegistry.icons(name="camera"),  # type: ignore
+            image=AssetRegistry.icons(name="x"),  # type: ignore
             fg_color="transparent",
         )
         self._badge_icon.grid(row=0, column=0, padx=(10, 4), pady=4)
@@ -345,10 +345,15 @@ class Camera(ctk.CTkFrame):
 
         bg = self._BADGE_BLOCKED_BG if blocked else self._BADGE_OK_BG
         fg = self._BADGE_BLOCKED_TEXT if blocked else self._BADGE_OK_TEXT
+        icon = (
+            AssetRegistry.icons("x.svg") if blocked else AssetRegistry.icons("camera")
+        )
         text = "Detección bloqueada" if blocked else "Detección activa"
 
-        self.detection_badge.configure(fg_color=bg, border_color=fg)
-        self._badge_label.configure(text=text, text_color=fg)
+        if self._badge_label._fg_color != fg:
+            self._badge_icon.configure(image=icon)
+            self.detection_badge.configure(fg_color=bg, border_color=fg)
+            self._badge_label.configure(text=text, text_color=fg)
 
     def init_camera(self):
         self.recognizer = GestureRecognition(fetch_gestures())

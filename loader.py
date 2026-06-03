@@ -65,6 +65,7 @@ class AssetRegistry:
         "trash": "./icons/trash.svg",
         "mark": "./icons/mark.svg",
         "reset": "./icons/reset.svg",
+        "x": "./icons/x.svg",
     }
 
     @classmethod
