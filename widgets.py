@@ -1410,8 +1410,8 @@ class ImagesEffectLabel(ctk.CTkLabel):
 
 
 class NavigationButton(ctk.CTkFrame):
-    _NORMAL_COLOR = "#404040"
-    _HOVER_COLOR = "#2d2d2b"
+    _NORMAL_COLOR = "#3a3a38"
+    _HOVER_COLOR = "#50504d"
 
     def __init__(
         self,
